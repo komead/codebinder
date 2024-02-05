@@ -5,7 +5,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical" android:background="#BD8A8A">
 
     <androidx.camera.view.PreviewView
             android:id="@+id/viewFinder"
@@ -15,36 +15,46 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintBottom_toBottomOf="parent">
+    </androidx.camera.view.PreviewView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:src="@android:drawable/ic_menu_camera"
-            style="@style/camera_buttons"
-            android:id="@+id/btn_torch"
-            android:layout_gravity="center_horizontal"
-            android:baselineAlignBottom="false"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:backgroundTint="#000000"
-            app:elevation="0dp"
-            app:pressedTranslationZ="0dp"
-            app:borderWidth="2dp" android:clickable="true"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:src="@android:drawable/ic_menu_sort_by_size"
-            style="@style/camera_buttons"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:clickable="true"
+            android:id="@+id/btn_torch"
+            android:layout_marginTop="70dp"
+            android:layout_marginStart="8dp"
+            android:baselineAlignBottom="false"
+            android:backgroundTint="#00FFFFFF"
+            app:elevation="0dp"
+            app:borderWidth="1dp"
+            app:backgroundTint="@color/white"
+            app:pressedTranslationZ="0dp"
+            app:srcCompat="@drawable/icon_flash_off"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+            style="@style/back_buttons"
+            android:id="@+id/btn_back"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+            style="@style/camera_buttons"
+            android:src="@android:drawable/ic_menu_sort_by_size"
             android:id="@+id/btn_menu"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/btn_torch"
             app:backgroundTint="#000000"
             app:elevation="0dp"
             app:pressedTranslationZ="0dp"
-            app:borderWidth="2dp"/>
+            app:borderWidth="2dp"
+            app:layout_constraintLeft_toLeftOf="parent"/>
     <TextView
             android:text="TextView"
             android:layout_width="wrap_content"
@@ -54,9 +64,9 @@
             app:layout_constraintRight_toRightOf="parent"
             android:layout_marginTop="8dp"
             android:layout_marginRight="8dp"
-            android:textColor="#000000"
+            android:textColor="#FFFFFF"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:background="#4DFFFFFF"/>
+            android:background="#1C42D1"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

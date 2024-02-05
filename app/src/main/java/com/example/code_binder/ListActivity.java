@@ -14,6 +14,7 @@ import java.util.ArrayList;
 public class ListActivity extends AppCompatActivity {
     private ListView codeData;
     private Button btn_send;
+    private FloatingActionButton back_btn;
     private ListViewAdapter adapter;
 
     private ArrayList<String> scannedCodes;
@@ -26,6 +27,7 @@ public class ListActivity extends AppCompatActivity {
         adapter = new ListViewAdapter(this);
 
         btn_send = findViewById(R.id.send_btn);
+        back_btn = findViewById(R.id.btn_back);
         codeData = findViewById(R.id.codeData_lv);
         codeData.setAdapter(adapter);
 
@@ -38,5 +40,11 @@ public class ListActivity extends AppCompatActivity {
             }
 
 
+        back_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
     }
 }

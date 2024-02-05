@@ -12,7 +12,7 @@ import java.util.List;
 
 public class DataSender extends AsyncTask<Void, Void, Void> {
     private Context context;
-    private ArrayList<String> dataFromSQLite;
+    private ArrayList<String> dataFromDB;
 
     public DataSender(Context context) {
         this.context = context;
@@ -22,13 +22,13 @@ public class DataSender extends AsyncTask<Void, Void, Void> {
     protected Void doInBackground(Void... voids) {
         CodeDataSource codeDataSource = new CodeDataSource(context);
         codeDataSource.open();
-        dataFromSQLite = codeDataSource.getAllData();
+        dataFromDB = codeDataSource.getAllData();
         codeDataSource.close();
 
         // Отправка данных на сервер
-        if (dataFromSQLite != null && !dataFromSQLite.isEmpty()) {
+        if (dataFromDB != null && !dataFromDB.isEmpty()) {
             ApiService apiService = ApiClient.getApiService();
-            Call<Void> call = apiService.addDataToServer(dataFromSQLite);
+            Call<Void> call = apiService.addDataToServer(dataFromDB);
 
             call.enqueue(new Callback<Void>() {
                 @Override

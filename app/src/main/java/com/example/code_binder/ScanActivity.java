@@ -23,12 +23,11 @@ import android.util.Size;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Locale;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 import com.google.zxing.*;
 import com.google.zxing.common.HybridBinarizer;
@@ -36,14 +35,17 @@ import com.google.zxing.multi.GenericMultipleBarcodeReader;
 
 public class ScanActivity extends AppCompatActivity {
     private PreviewView camera_pv;
-    private FloatingActionButton torch_btn;
+    private FloatingActionButton back_btn;
     private FloatingActionButton menu_btn;
-    private ImageCapture imageCapture;
+    private FloatingActionButton torch_btn;
     private TextView codeCounter;
-    private ArrayList<String> scannedCodes;
+    private ImageCapture imageCapture;
+    private HashSet<String> scannedCodes;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
-    private Executor executor = Executors.newSingleThreadExecutor();
+    private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private Camera camera;
     private int numberOfCodes;
+    private boolean torchState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,11 +53,12 @@ public class ScanActivity extends AppCompatActivity {
         setContentView(R.layout.activity_scan);
 
         camera_pv = findViewById(R.id.viewFinder);
-        torch_btn = findViewById(R.id.btn_torch);
+        back_btn = findViewById(R.id.btn_back);
         menu_btn = findViewById(R.id.btn_menu);
+        torch_btn = findViewById(R.id.btn_torch);
         codeCounter = findViewById(R.id.counter);
 
-        scannedCodes = new ArrayList<>();
+        scannedCodes = new HashSet<>();
 
         numberOfCodes = getIntent().getIntExtra("Number", 1);
         codeCounter.setText(scannedCodes.size() + "/" + numberOfCodes);
@@ -63,17 +66,49 @@ public class ScanActivity extends AppCompatActivity {
         menu_btn.setClickable(false);
         menu_btn.setVisibility(View.INVISIBLE);
 
+        torchState = false;
+
         menu_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(ScanActivity.this, ListActivity.class);
-                intent.putStringArrayListExtra("DataFromCodes", scannedCodes);
+                intent.putStringArrayListExtra("DataFromCodes", new ArrayList<>(scannedCodes));
                 startActivity(intent);
                 finish();
             }
         });
 
+        back_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
+        torch_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (torchState) {
+                    torch_btn.setImageResource(R.drawable.icon_flash_off);
+                    camera.getCameraControl().enableTorch(false);
+                    torchState = false;
+                }
+                else {
+                    torch_btn.setImageResource(R.drawable.icon_flash_on);
+                    camera.getCameraControl().enableTorch(true);
+                    torchState = true;
+                }
+            }
+        });
+
         startCamera();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Закрыть пул потоков когда Activity уничтожается
+        executor.shutdown();
     }
 
     private void startCamera() {
@@ -101,14 +136,15 @@ public class ScanActivity extends AppCompatActivity {
         preview.setSurfaceProvider(camera_pv.getSurfaceProvider());
 
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setTargetResolution(new Size(1736, 1736))
+                .setTargetResolution(new Size(640, 480)) // Пример установки разрешения
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build();
 
         imageCapture = new ImageCapture.Builder()
+                .setFlashMode(ImageCapture.FLASH_MODE_ON)
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                 .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
                 .build();
-
 
 
         // Обработка каждого кадра с камеры
@@ -117,44 +153,38 @@ public class ScanActivity extends AppCompatActivity {
             public void analyze(@NonNull ImageProxy image) {
                 // Распознание Data Matrix кода
                 ArrayList<String> dataMatrixData = decodeDataMatrixCode(image.toBitmap());
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (dataMatrixData != null) {
-                            for (String data : dataMatrixData) {
+                if (dataMatrixData != null)
+                    runOnUiThread(() -> {
+                        for (String data : dataMatrixData) {
+                            if (scannedCodes.size() <= numberOfCodes) {
+                                scannedCodes.add(data);
 
-                                if (!scannedCodes.contains(data) && scannedCodes.size() <= numberOfCodes) {
-                                    scannedCodes.add(data);
+                                codeCounter.setText(scannedCodes.size() + "/" + numberOfCodes);
 
-                                    codeCounter.setText(scannedCodes.size() + "/" + numberOfCodes);
+                                if (scannedCodes.size() == numberOfCodes)
+                                    Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
+                                else if (scannedCodes.size() == (numberOfCodes + 1)) {
+                                    image.close();
+                                    cameraProvider.unbindAll();
 
-                                    if (scannedCodes.size() == numberOfCodes)
-                                        Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
-                                    else if (scannedCodes.size() < numberOfCodes)
-                                        Toast.makeText(ScanActivity.this, "DataMatrix-код успешно добавлен", Toast.LENGTH_SHORT).show();
-                                    else if (scannedCodes.size() == (numberOfCodes + 1)) {
-                                        image.close();
-                                        cameraProvider.unbindAll();
-
-                                        menu_btn.setClickable(true);
-                                        menu_btn.setVisibility(View.VISIBLE);
-                                    }
+                                    menu_btn.setClickable(true);
+                                    menu_btn.setVisibility(View.VISIBLE);
                                 }
-
                             }
                         }
-                    }
-                });
+                    });
                 image.close();
             }
         });
 
         // Связывание компонентов камеры. Компоненты будут работать, пока жива ScanActivity
-        cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis, imageCapture);
+        camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis, imageCapture);
     }
 
     private ArrayList<String> decodeDataMatrixCode(Bitmap bitmap) {
         MultiFormatReader multiFormatReader = new MultiFormatReader();
+        multiFormatReader.setHints(Collections.singletonMap(
+                DecodeHintType.POSSIBLE_FORMATS, Collections.singletonList(BarcodeFormat.DATA_MATRIX)));
         GenericMultipleBarcodeReader multipleBarcodeReader = new GenericMultipleBarcodeReader(multiFormatReader);
 
         int width = bitmap.getWidth();

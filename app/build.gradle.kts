@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.code_binder"
-        minSdk = 24
+        minSdk = 23
         targetSdk = 33
         versionCode = 1
         versionName = "1.0"
@@ -31,7 +31,7 @@ android {
 dependencies {
 
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.10.0")
+    implementation("com.google.android.material:material:1.11.0")
     implementation ("androidx.core:core:1.12.0")
     implementation ("com.google.zxing:core:3.4.1")
     implementation ("androidx.camera:camera-core:1.3.0")
