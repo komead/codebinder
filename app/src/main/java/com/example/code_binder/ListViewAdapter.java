@@ -62,12 +62,12 @@ public class ListViewAdapter extends ArrayAdapter<String> {
         thirdPart_tv = rowView.findViewById(R.id.thirdPart_tv);
 
         String text = dataFromCodes.get(position);
-        String[] str = dataCutter(text);
+        //String[] str = dataCutter(text);
 
         id_tv.setText(Integer.toString(position + 1));
-        firstPart_tv.setText(str[0]);
-        secondPart_tv.setText(str[1]);
-        thirdPart_tv.setText(str[2]);
+        firstPart_tv.setText(text);
+        secondPart_tv.setText("");
+        thirdPart_tv.setText("");
 
         return rowView;
     }

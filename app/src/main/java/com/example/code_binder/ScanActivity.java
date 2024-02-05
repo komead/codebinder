@@ -3,6 +3,7 @@ package com.example.code_binder;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -136,13 +137,12 @@ public class ScanActivity extends AppCompatActivity {
         preview.setSurfaceProvider(camera_pv.getSurfaceProvider());
 
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setTargetResolution(new Size(640, 480)) // Пример установки разрешения
+                .setTargetResolution(new Size(640, 480))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build();
 
         imageCapture = new ImageCapture.Builder()
-                .setFlashMode(ImageCapture.FLASH_MODE_ON)
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
                 .build();
 
@@ -152,27 +152,30 @@ public class ScanActivity extends AppCompatActivity {
             @Override
             public void analyze(@NonNull ImageProxy image) {
                 // Распознание Data Matrix кода
-                ArrayList<String> dataMatrixData = decodeDataMatrixCode(image.toBitmap());
-                if (dataMatrixData != null)
-                    runOnUiThread(() -> {
-                        for (String data : dataMatrixData) {
-                            if (scannedCodes.size() <= numberOfCodes) {
-                                scannedCodes.add(data);
+                for (int currentAngle = 0; currentAngle <= 45; currentAngle = currentAngle + 5) {
+                    ArrayList<String> dataMatrixData = decodeDataMatrixCode(rotateBitmap(image.toBitmap(), currentAngle));
+                    if (dataMatrixData != null) {
+                        runOnUiThread(() -> {
+                            for (String data : dataMatrixData)
+                                if (scannedCodes.size() <= numberOfCodes) {
+                                    scannedCodes.add(data);
 
-                                codeCounter.setText(scannedCodes.size() + "/" + numberOfCodes);
+                                    codeCounter.setText(scannedCodes.size() + "/" + numberOfCodes);
 
-                                if (scannedCodes.size() == numberOfCodes)
-                                    Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
-                                else if (scannedCodes.size() == (numberOfCodes + 1)) {
-                                    image.close();
-                                    cameraProvider.unbindAll();
+                                    if (scannedCodes.size() == numberOfCodes)
+                                        Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
+                                    else if (scannedCodes.size() == (numberOfCodes + 1)) {
+                                        image.close();
+                                        cameraProvider.unbindAll();
 
-                                    menu_btn.setClickable(true);
-                                    menu_btn.setVisibility(View.VISIBLE);
+                                        menu_btn.setClickable(true);
+                                        menu_btn.setVisibility(View.VISIBLE);
+                                    }
                                 }
-                            }
-                        }
-                    });
+                        });
+                        break;
+                    }
+                }
                 image.close();
             }
         });
@@ -183,8 +186,13 @@ public class ScanActivity extends AppCompatActivity {
 
     private ArrayList<String> decodeDataMatrixCode(Bitmap bitmap) {
         MultiFormatReader multiFormatReader = new MultiFormatReader();
-        multiFormatReader.setHints(Collections.singletonMap(
-                DecodeHintType.POSSIBLE_FORMATS, Collections.singletonList(BarcodeFormat.DATA_MATRIX)));
+        Map<DecodeHintType,Object> hints = new HashMap<>();
+        //тщательное распознание кода
+        hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
+        //поиск только DataMatrix
+        hints.put(DecodeHintType.POSSIBLE_FORMATS, Collections.singletonList(BarcodeFormat.DATA_MATRIX));
+        multiFormatReader.setHints(hints);
+
         GenericMultipleBarcodeReader multipleBarcodeReader = new GenericMultipleBarcodeReader(multiFormatReader);
 
         int width = bitmap.getWidth();
@@ -209,4 +217,11 @@ public class ScanActivity extends AppCompatActivity {
             return null;
         }
     }
+
+    public Bitmap rotateBitmap(Bitmap original, float degrees) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degrees);
+        return Bitmap.createBitmap(original, 0, 0, original.getWidth(), original.getHeight(), matrix, true);
+    }
+
 }
