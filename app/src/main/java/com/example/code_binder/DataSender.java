@@ -10,25 +10,12 @@ import retrofit2.Response;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DataSender extends AsyncTask<Void, Void, Void> {
-    private Context context;
-    private ArrayList<String> dataFromDB;
-
-    public DataSender(Context context) {
-        this.context = context;
-    }
-
-    @Override
-    protected Void doInBackground(Void... voids) {
-        CodeDataSource codeDataSource = new CodeDataSource(context);
-        codeDataSource.open();
-        dataFromDB = codeDataSource.getAllData();
-        codeDataSource.close();
-
+public class DataSender {
+    public Void sendData(ArrayList<String> data) {
         // Отправка данных на сервер
-        if (dataFromDB != null && !dataFromDB.isEmpty()) {
+        if (data != null && !data.isEmpty()) {
             ApiService apiService = ApiClient.getApiService();
-            Call<Void> call = apiService.addDataToServer(dataFromDB);
+            Call<Void> call = apiService.addDataToServer(data);
 
             call.enqueue(new Callback<Void>() {
                 @Override

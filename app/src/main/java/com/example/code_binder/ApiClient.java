@@ -4,10 +4,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
-    private static final String DATABASE_URL = "http://server_url/";
-
     private static Retrofit retrofit = new Retrofit.Builder()
-            .baseUrl(DATABASE_URL)
+            .baseUrl("http://server_url/")
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 

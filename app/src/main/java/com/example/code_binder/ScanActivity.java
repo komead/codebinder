@@ -2,13 +2,9 @@ package com.example.code_binder;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
 import android.view.View;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -21,12 +17,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 import android.util.Size;
 
-import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
@@ -37,9 +29,10 @@ import com.google.zxing.multi.GenericMultipleBarcodeReader;
 public class ScanActivity extends AppCompatActivity {
     private PreviewView camera_pv;
     private FloatingActionButton back_btn;
-    private FloatingActionButton menu_btn;
+    private FloatingActionButton save_btn;
     private FloatingActionButton torch_btn;
-    private TextView codeCounter;
+    private TextView codeCounter_tv;
+
     private ImageCapture imageCapture;
     private HashSet<String> scannedCodes;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
@@ -55,25 +48,33 @@ public class ScanActivity extends AppCompatActivity {
 
         camera_pv = findViewById(R.id.viewFinder);
         back_btn = findViewById(R.id.btn_back);
-        menu_btn = findViewById(R.id.btn_menu);
+        save_btn = findViewById(R.id.btn_save);
         torch_btn = findViewById(R.id.btn_torch);
-        codeCounter = findViewById(R.id.counter);
+        codeCounter_tv = findViewById(R.id.counter);
 
         scannedCodes = new HashSet<>();
 
         numberOfCodes = getIntent().getIntExtra("Number", 1);
-        codeCounter.setText(scannedCodes.size() + "/" + numberOfCodes);
+        codeCounter_tv.setText(scannedCodes.size() + "/" + numberOfCodes);
 
-        menu_btn.setClickable(false);
-        menu_btn.setVisibility(View.INVISIBLE);
+        save_btn.setClickable(false);
+        save_btn.setVisibility(View.INVISIBLE);
 
         torchState = false;
 
-        menu_btn.setOnClickListener(new View.OnClickListener() {
+        save_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                CodeDataSource codeDataSource = new CodeDataSource(ScanActivity.this);
+                codeDataSource.open();
+                codeDataSource.clear();
+
+                for (String code : scannedCodes)
+                    codeDataSource.addData(code);
+
+                codeDataSource.close();
+
                 Intent intent = new Intent(ScanActivity.this, ListActivity.class);
-                intent.putStringArrayListExtra("DataFromCodes", new ArrayList<>(scannedCodes));
                 startActivity(intent);
                 finish();
             }
@@ -160,7 +161,7 @@ public class ScanActivity extends AppCompatActivity {
                                 if (scannedCodes.size() <= numberOfCodes) {
                                     scannedCodes.add(data);
 
-                                    codeCounter.setText(scannedCodes.size() + "/" + numberOfCodes);
+                                    codeCounter_tv.setText(scannedCodes.size() + "/" + numberOfCodes);
 
                                     if (scannedCodes.size() == numberOfCodes)
                                         Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
@@ -168,8 +169,8 @@ public class ScanActivity extends AppCompatActivity {
                                         image.close();
                                         cameraProvider.unbindAll();
 
-                                        menu_btn.setClickable(true);
-                                        menu_btn.setVisibility(View.VISIBLE);
+                                        save_btn.setClickable(true);
+                                        save_btn.setVisibility(View.VISIBLE);
                                     }
                                 }
                         });

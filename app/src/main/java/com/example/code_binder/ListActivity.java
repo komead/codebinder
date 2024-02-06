@@ -12,8 +12,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 
 public class ListActivity extends AppCompatActivity {
-    private ListView codeData;
-    private Button btn_send;
+    private ListView codeData_lv;
+    private Button send_btn;
     private FloatingActionButton back_btn;
     private ListViewAdapter adapter;
 
@@ -26,12 +26,15 @@ public class ListActivity extends AppCompatActivity {
 
         adapter = new ListViewAdapter(this);
 
-        btn_send = findViewById(R.id.send_btn);
+        send_btn = findViewById(R.id.send_btn);
         back_btn = findViewById(R.id.btn_back);
-        codeData = findViewById(R.id.codeData_lv);
-        codeData.setAdapter(adapter);
+        codeData_lv = findViewById(R.id.codeData_lv);
+        codeData_lv.setAdapter(adapter);
 
-        scannedCodes = new ArrayList<>(getIntent().getStringArrayListExtra("DataFromCodes"));
+        CodeDataSource codeDataSource = new CodeDataSource(ListActivity.this);
+        codeDataSource.open();
+        scannedCodes = codeDataSource.getAllData();
+        codeDataSource.close();
 
         if (scannedCodes != null)
             for (String str : scannedCodes) {
@@ -39,11 +42,17 @@ public class ListActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
             }
 
-
         back_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 finish();
+            }
+        });
+
+        send_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
             }
         });
     }

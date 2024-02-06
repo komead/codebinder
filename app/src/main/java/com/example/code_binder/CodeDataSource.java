@@ -38,7 +38,7 @@ public class CodeDataSource {
         Cursor cursor = database.query("dataCodes", null, null, null, null, null, null);
 
         while (cursor.moveToNext()) {
-            list.add(cursor.getString(list.size() + 1));
+            list.add(cursor.getString(1));
         }
         cursor.close();
         return list;
