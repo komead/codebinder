@@ -52,7 +52,13 @@ public class ListActivity extends AppCompatActivity {
         send_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        DataSender dataSender = new DataSender(ListActivity.this);
+                        dataSender.sendData("xe-xe-xe");
+                    }
+                }).start();
             }
         });
     }

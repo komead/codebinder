@@ -1,39 +1,54 @@
 package com.example.code_binder;
 
 import android.content.Context;
-import android.os.AsyncTask;
-import android.util.Log;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.net.Socket;
 
 public class DataSender {
-    public Void sendData(ArrayList<String> data) {
+    private Context context;
+
+    private final int port = 11000;
+    private final String hostIp = "192.168.100.2";
+
+    public DataSender(Context context) {
+        this.context = context;
+    }
+
+    public String sendData(String data) {
         // Отправка данных на сервер
-        if (data != null && !data.isEmpty()) {
-            ApiService apiService = ApiClient.getApiService();
-            Call<Void> call = apiService.addDataToServer(data);
+        try {
+            Socket socket = new Socket(hostIp, port);
 
-            call.enqueue(new Callback<Void>() {
-                @Override
-                public void onResponse(Call<Void> call, Response<Void> response) {
-                    if (response.isSuccessful()) {
-                        Log.d("DataSyncTask", "Данные успешно отправлены на сервер");
-                    } else {
-                        Log.e("DataSyncTask", "Ошибка при отправке данных на сервер");
-                    }
-                }
+            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-                @Override
-                public void onFailure(Call<Void> call, Throwable t) {
-                    Log.e("DataSyncTask", "Ошибка при отправке запроса на сервер", t);
-                }
-            });
+            bufferedWriter.write(data);
+            bufferedWriter.flush();
+            socket.close();
+        } catch (IOException e) {
+            System.err.println("ошибка: " + e);
         }
 
-        return null;
+        return "success";
+    }
+
+    public String getData() {
+        try {
+            Socket socket = new Socket(hostIp, port);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            // Читаем строку, полученную от сервера
+            String receivedString = reader.readLine();
+            Toast.makeText(context, receivedString, Toast.LENGTH_SHORT).show();
+
+            // Закрываем соединение
+            reader.close();
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return "success";
     }
 }

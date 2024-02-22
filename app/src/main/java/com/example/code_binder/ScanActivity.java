@@ -38,6 +38,11 @@ public class ScanActivity extends AppCompatActivity {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Camera camera;
+
+    private MultiFormatReader multiFormatReader;
+    private Map<DecodeHintType,Object> hints;
+    private GenericMultipleBarcodeReader multipleBarcodeReader;
+
     private int numberOfCodes;
     private boolean torchState;
 
@@ -62,46 +67,9 @@ public class ScanActivity extends AppCompatActivity {
 
         torchState = false;
 
-        save_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                CodeDataSource codeDataSource = new CodeDataSource(ScanActivity.this);
-                codeDataSource.open();
-                codeDataSource.clear();
+        setListeners();
 
-                for (String code : scannedCodes)
-                    codeDataSource.addData(code);
-
-                codeDataSource.close();
-
-                Intent intent = new Intent(ScanActivity.this, ListActivity.class);
-                startActivity(intent);
-                finish();
-            }
-        });
-
-        back_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-
-        torch_btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (torchState) {
-                    torch_btn.setImageResource(R.drawable.icon_flash_off);
-                    camera.getCameraControl().enableTorch(false);
-                    torchState = false;
-                }
-                else {
-                    torch_btn.setImageResource(R.drawable.icon_flash_on);
-                    camera.getCameraControl().enableTorch(true);
-                    torchState = true;
-                }
-            }
-        });
+        settingsForScanning();
 
         startCamera();
     }
@@ -144,7 +112,7 @@ public class ScanActivity extends AppCompatActivity {
 
         imageCapture = new ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
+                .setTargetRotation(getDisplay().getRotation())
                 .build();
 
 
@@ -156,10 +124,12 @@ public class ScanActivity extends AppCompatActivity {
                 for (int currentAngle = 0; currentAngle <= 45; currentAngle = currentAngle + 5) {
                     ArrayList<String> dataMatrixData = decodeDataMatrixCode(rotateBitmap(image.toBitmap(), currentAngle));
                     if (dataMatrixData != null) {
-                        runOnUiThread(() -> {
-                            for (String data : dataMatrixData)
-                                if (scannedCodes.size() <= numberOfCodes) {
-                                    scannedCodes.add(data);
+
+                        for (String data : dataMatrixData)
+                            if (scannedCodes.size() <= numberOfCodes) {
+                                scannedCodes.add(data);
+
+                                runOnUiThread(() -> {
 
                                     codeCounter_tv.setText(scannedCodes.size() + "/" + numberOfCodes);
 
@@ -172,11 +142,14 @@ public class ScanActivity extends AppCompatActivity {
                                         save_btn.setClickable(true);
                                         save_btn.setVisibility(View.VISIBLE);
                                     }
-                                }
-                        });
+                                });
+                            }
+
                         break;
                     }
                 }
+
+
                 image.close();
             }
         });
@@ -185,17 +158,18 @@ public class ScanActivity extends AppCompatActivity {
         camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis, imageCapture);
     }
 
-    private ArrayList<String> decodeDataMatrixCode(Bitmap bitmap) {
-        MultiFormatReader multiFormatReader = new MultiFormatReader();
-        Map<DecodeHintType,Object> hints = new HashMap<>();
+    private void settingsForScanning() {
+        multiFormatReader = new MultiFormatReader();
+        hints = new HashMap<>();
         //тщательное распознание кода
         hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
         //поиск только DataMatrix
         hints.put(DecodeHintType.POSSIBLE_FORMATS, Collections.singletonList(BarcodeFormat.DATA_MATRIX));
         multiFormatReader.setHints(hints);
+        multipleBarcodeReader = new GenericMultipleBarcodeReader(multiFormatReader);
+    }
 
-        GenericMultipleBarcodeReader multipleBarcodeReader = new GenericMultipleBarcodeReader(multiFormatReader);
-
+    private ArrayList<String> decodeDataMatrixCode(Bitmap bitmap) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         int[] pixels = new int[width * height];
@@ -223,6 +197,49 @@ public class ScanActivity extends AppCompatActivity {
         Matrix matrix = new Matrix();
         matrix.postRotate(degrees);
         return Bitmap.createBitmap(original, 0, 0, original.getWidth(), original.getHeight(), matrix, true);
+    }
+
+    private void setListeners() {
+        save_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CodeDataSource codeDataSource = new CodeDataSource(ScanActivity.this);
+                codeDataSource.open();
+                codeDataSource.clear();
+
+                for (String code : scannedCodes)
+                    codeDataSource.addData(code);
+
+                codeDataSource.close();
+
+                Intent intent = new Intent(ScanActivity.this, ListActivity.class);
+                startActivity(intent);
+                finish();
+            }
+        });
+
+        back_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
+        torch_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (torchState) {
+                    torch_btn.setImageResource(R.drawable.icon_flash_off);
+                    camera.getCameraControl().enableTorch(false);
+                    torchState = false;
+                }
+                else {
+                    torch_btn.setImageResource(R.drawable.icon_flash_on);
+                    camera.getCameraControl().enableTorch(true);
+                    torchState = true;
+                }
+            }
+        });
     }
 
 }
