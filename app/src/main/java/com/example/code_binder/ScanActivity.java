@@ -1,8 +1,8 @@
 package com.example.code_binder;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Matrix;
+import android.media.Image;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -22,9 +22,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
-import com.google.zxing.*;
-import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.multi.GenericMultipleBarcodeReader;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.common.InputImage;
 
 public class ScanActivity extends AppCompatActivity {
     private PreviewView camera_pv;
@@ -38,10 +39,6 @@ public class ScanActivity extends AppCompatActivity {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Camera camera;
-
-    private MultiFormatReader multiFormatReader;
-    private Map<DecodeHintType,Object> hints;
-    private GenericMultipleBarcodeReader multipleBarcodeReader;
 
     private int numberOfCodes;
     private boolean torchState;
@@ -68,8 +65,6 @@ public class ScanActivity extends AppCompatActivity {
         torchState = false;
 
         setListeners();
-
-        settingsForScanning();
 
         startCamera();
     }
@@ -115,88 +110,38 @@ public class ScanActivity extends AppCompatActivity {
                 .setTargetRotation(getDisplay().getRotation())
                 .build();
 
-
         // Обработка каждого кадра с камеры
-        imageAnalysis.setAnalyzer(executor, new ImageAnalysis.Analyzer() {
-            @Override
-            public void analyze(@NonNull ImageProxy image) {
-                // Распознание Data Matrix кода
-                for (int currentAngle = 0; currentAngle <= 45; currentAngle = currentAngle + 5) {
-                    ArrayList<String> dataMatrixData = decodeDataMatrixCode(rotateBitmap(image.toBitmap(), currentAngle));
-                    if (dataMatrixData != null) {
-
-                        for (String data : dataMatrixData)
-                            if (scannedCodes.size() <= numberOfCodes) {
-                                scannedCodes.add(data);
-
-                                runOnUiThread(() -> {
-
-                                    codeCounter_tv.setText(scannedCodes.size() + "/" + numberOfCodes);
-
-                                    if (scannedCodes.size() == numberOfCodes)
-                                        Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
-                                    else if (scannedCodes.size() == (numberOfCodes + 1)) {
-                                        image.close();
-                                        cameraProvider.unbindAll();
-
-                                        save_btn.setClickable(true);
-                                        save_btn.setVisibility(View.VISIBLE);
-                                    }
-                                });
+        imageAnalysis.setAnalyzer(executor, imageProxy -> {
+            @SuppressLint("UnsafeOptInUsageError") Image mediaImage = imageProxy.getImage();
+            if (mediaImage != null) {
+                InputImage inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.getImageInfo().getRotationDegrees());
+                // Инициализируем сканер штрих-кодов
+                BarcodeScanner scanner = BarcodeScanning.getClient();
+                // Процесс распознавания
+                scanner.process(inputImage)
+                        .addOnSuccessListener(barcodes -> {
+                            for (Barcode barcode : barcodes) {
+                                String rawValue = barcode.getRawValue();
+                                if (rawValue != null && scannedCodes.size() <= numberOfCodes) {
+                                    scannedCodes.add(rawValue);
+                                    runOnUiThread(() -> {
+                                        codeCounter_tv.setText(scannedCodes.size() + "/" + numberOfCodes);
+                                        if (scannedCodes.size() == numberOfCodes)
+                                            Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
+                                        else if (scannedCodes.size() == (numberOfCodes + 1)) {
+                                            save_btn.setClickable(true);
+                                            save_btn.setVisibility(View.VISIBLE);
+                                        }
+                                    });
+                                }
                             }
-
-                        break;
-                    }
-                }
-
-
-                image.close();
+                        })
+                        .addOnCompleteListener(task -> imageProxy.close());
             }
         });
 
         // Связывание компонентов камеры. Компоненты будут работать, пока жива ScanActivity
         camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis, imageCapture);
-    }
-
-    private void settingsForScanning() {
-        multiFormatReader = new MultiFormatReader();
-        hints = new HashMap<>();
-        //тщательное распознание кода
-        hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
-        //поиск только DataMatrix
-        hints.put(DecodeHintType.POSSIBLE_FORMATS, Collections.singletonList(BarcodeFormat.DATA_MATRIX));
-        multiFormatReader.setHints(hints);
-        multipleBarcodeReader = new GenericMultipleBarcodeReader(multiFormatReader);
-    }
-
-    private ArrayList<String> decodeDataMatrixCode(Bitmap bitmap) {
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        int[] pixels = new int[width * height];
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-
-        BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(new RGBLuminanceSource(width, height, pixels)));
-
-        try {
-            Result[] result = multipleBarcodeReader.decodeMultiple(binaryBitmap);
-
-            // Распознанный текст Data Matrix кода
-            ArrayList<String> dataMatrixData = new ArrayList<>();
-            for (Result res : result)
-                dataMatrixData.add(res.getText());
-
-            return dataMatrixData;
-        } catch (Exception e) {
-            // Data Matrix код не был обнаружен
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    public Bitmap rotateBitmap(Bitmap original, float degrees) {
-        Matrix matrix = new Matrix();
-        matrix.postRotate(degrees);
-        return Bitmap.createBitmap(original, 0, 0, original.getWidth(), original.getHeight(), matrix, true);
     }
 
     private void setListeners() {
