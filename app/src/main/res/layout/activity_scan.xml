@@ -10,21 +10,17 @@
     <androidx.camera.view.PreviewView
             android:id="@+id/viewFinder"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_gravity="center_horizontal"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
-    </androidx.camera.view.PreviewView>
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:clickable="true"
             android:id="@+id/btn_torch"
-            android:layout_marginTop="70dp"
-            android:layout_marginStart="8dp"
             android:baselineAlignBottom="false"
             android:backgroundTint="#00FFFFFF"
             app:elevation="0dp"
@@ -32,32 +28,32 @@
             app:backgroundTint="@color/white"
             app:pressedTranslationZ="0dp"
             app:srcCompat="@drawable/icon_flash_off"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-    />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/btn_back"
+            app:layout_constraintEnd_toStartOf="@+id/btn_list"
+            android:layout_marginBottom="24dp"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
             style="@style/back_buttons"
             android:id="@+id/btn_back"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="8dp"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="32dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-    />
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginBottom="24dp" app:backgroundTint="@color/white"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
             style="@style/camera_buttons"
             android:src="@android:drawable/ic_menu_sort_by_size"
-            android:id="@+id/btn_save"
+            android:id="@+id/btn_list"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:backgroundTint="#000000"
             app:elevation="0dp"
             app:pressedTranslationZ="0dp"
             app:borderWidth="2dp"
-            app:layout_constraintLeft_toLeftOf="parent"
-    />
+            android:layout_marginRight="32dp"
+            android:layout_marginBottom="24dp"/>
 
     <TextView
             android:text="TextView"
@@ -66,12 +62,13 @@
             android:id="@+id/counter"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            android:layout_marginTop="8dp"
-            android:layout_marginRight="8dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginRight="24dp"
             android:textColor="#FFFFFF"
-            android:textSize="20sp"
+            android:textSize="34sp"
             android:textStyle="bold"
-            android:background="#1C42D1"
-    />
+            android:background="#401C42D1"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="24dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

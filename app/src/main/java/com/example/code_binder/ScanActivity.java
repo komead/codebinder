@@ -6,7 +6,6 @@ import android.media.Image;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.*;
@@ -15,7 +14,6 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
-import android.util.Size;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -30,11 +28,10 @@ import com.google.mlkit.vision.common.InputImage;
 public class ScanActivity extends AppCompatActivity {
     private PreviewView camera_pv;
     private FloatingActionButton back_btn;
-    private FloatingActionButton save_btn;
+    private FloatingActionButton list_btn;
     private FloatingActionButton torch_btn;
     private TextView codeCounter_tv;
 
-    private ImageCapture imageCapture;
     private HashSet<String> scannedCodes;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -50,22 +47,17 @@ public class ScanActivity extends AppCompatActivity {
 
         camera_pv = findViewById(R.id.viewFinder);
         back_btn = findViewById(R.id.btn_back);
-        save_btn = findViewById(R.id.btn_save);
+        list_btn = findViewById(R.id.btn_list);
         torch_btn = findViewById(R.id.btn_torch);
         codeCounter_tv = findViewById(R.id.counter);
 
         scannedCodes = new HashSet<>();
-
         numberOfCodes = getIntent().getIntExtra("Number", 1);
-        codeCounter_tv.setText(scannedCodes.size() + "/" + numberOfCodes);
-
-        save_btn.setClickable(false);
-        save_btn.setVisibility(View.INVISIBLE);
-
         torchState = false;
 
-        setListeners();
+        codeCounter_tv.setText("Отсканированно " + scannedCodes.size());
 
+        setListeners();
         startCamera();
     }
 
@@ -83,7 +75,7 @@ public class ScanActivity extends AppCompatActivity {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
                 bindPreview(cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
-
+                throw new RuntimeException(e);
             }
         }, ContextCompat.getMainExecutor(this));
     }
@@ -101,13 +93,7 @@ public class ScanActivity extends AppCompatActivity {
         preview.setSurfaceProvider(camera_pv.getSurfaceProvider());
 
         ImageAnalysis imageAnalysis = new ImageAnalysis.Builder()
-                .setTargetResolution(new Size(640, 480))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build();
-
-        imageCapture = new ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                .setTargetRotation(getDisplay().getRotation())
                 .build();
 
         // Обработка каждого кадра с камеры
@@ -122,16 +108,10 @@ public class ScanActivity extends AppCompatActivity {
                         .addOnSuccessListener(barcodes -> {
                             for (Barcode barcode : barcodes) {
                                 String rawValue = barcode.getRawValue();
-                                if (rawValue != null && scannedCodes.size() <= numberOfCodes) {
+                                if (rawValue != null) {
                                     scannedCodes.add(rawValue);
                                     runOnUiThread(() -> {
-                                        codeCounter_tv.setText(scannedCodes.size() + "/" + numberOfCodes);
-                                        if (scannedCodes.size() == numberOfCodes)
-                                            Toast.makeText(ScanActivity.this, "Остался код на коробке", Toast.LENGTH_SHORT).show();
-                                        else if (scannedCodes.size() == (numberOfCodes + 1)) {
-                                            save_btn.setClickable(true);
-                                            save_btn.setVisibility(View.VISIBLE);
-                                        }
+                                        codeCounter_tv.setText("Отсканированно: " + scannedCodes.size());
                                     });
                                 }
                             }
@@ -140,12 +120,11 @@ public class ScanActivity extends AppCompatActivity {
             }
         });
 
-        // Связывание компонентов камеры. Компоненты будут работать, пока жива ScanActivity
-        camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis, imageCapture);
+        camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
     }
 
     private void setListeners() {
-        save_btn.setOnClickListener(new View.OnClickListener() {
+        list_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 CodeDataSource codeDataSource = new CodeDataSource(ScanActivity.this);
@@ -159,7 +138,7 @@ public class ScanActivity extends AppCompatActivity {
 
                 Intent intent = new Intent(ScanActivity.this, ListActivity.class);
                 startActivity(intent);
-                finish();
+                //finish();
             }
         });
 

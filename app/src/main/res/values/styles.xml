@@ -13,13 +13,12 @@
         <item name="android:layout_width">wrap_content</item>>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:clickable">true</item>
-        <item name="android:layout_marginBottom">8dp</item>
         <item name="android:baselineAlignBottom">false</item>
         <item name="elevation">0dp</item>
         <item name="pressedTranslationZ">0dp</item>
-        <item name="borderWidth">2dp</item>
-        <item name="fabSize">mini</item>
-        <item name="maxImageSize">40dp</item>
+        <item name="borderWidth">1dp</item>
+        <item name="fabSize">normal</item>
+        <item name="maxImageSize">55dp</item>
     </style>
     <style name="listitem_partsofcode">
         <item name="android:layout_width">wrap_content</item>
