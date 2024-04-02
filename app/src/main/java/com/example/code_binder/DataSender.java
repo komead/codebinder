@@ -2,15 +2,19 @@ package com.example.code_binder;
 
 import android.content.Context;
 import android.widget.Toast;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.net.Socket;
+import java.util.List;
 
 public class DataSender {
     private Context context;
 
     private final int port = 11000;
-    private final String hostIp = "192.168.100.2";
+    private final String hostIp = "10.162.0.133";
 
     public DataSender(Context context) {
         this.context = context;
@@ -34,6 +38,8 @@ public class DataSender {
     }
 
     public String getData() {
+        Gson gson = new Gson();
+
         try {
             Socket socket = new Socket(hostIp, port);
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -41,6 +47,9 @@ public class DataSender {
             // Читаем строку, полученную от сервера
             String receivedString = reader.readLine();
             Toast.makeText(context, receivedString, Toast.LENGTH_SHORT).show();
+
+            Type listType = new TypeToken<List<Application>>(){}.getType();
+            List<Application> requirements = gson.fromJson(receivedString, listType);
 
             // Закрываем соединение
             reader.close();
