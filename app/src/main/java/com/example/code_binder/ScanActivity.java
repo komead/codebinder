@@ -37,7 +37,6 @@ public class ScanActivity extends AppCompatActivity {
     private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Camera camera;
 
-    private int numberOfCodes;
     private boolean torchState;
 
     @Override
@@ -52,10 +51,9 @@ public class ScanActivity extends AppCompatActivity {
         codeCounter_tv = findViewById(R.id.counter);
 
         scannedCodes = new HashSet<>();
-        numberOfCodes = getIntent().getIntExtra("Number", 1);
         torchState = false;
 
-        codeCounter_tv.setText("Отсканированно " + scannedCodes.size());
+        codeCounter_tv.setText("Отсканировано " + scannedCodes.size());
 
         setListeners();
         startCamera();
@@ -111,7 +109,7 @@ public class ScanActivity extends AppCompatActivity {
                                 if (rawValue != null) {
                                     scannedCodes.add(rawValue);
                                     runOnUiThread(() -> {
-                                        codeCounter_tv.setText("Отсканированно: " + scannedCodes.size());
+                                        codeCounter_tv.setText("Отсканировано: " + scannedCodes.size());
                                     });
                                 }
                             }
