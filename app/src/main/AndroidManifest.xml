@@ -18,7 +18,7 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.Codebinder">
         <activity
-                android:name=".MainActivity"
+                android:name=".Activity.MainActivity"
                 android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,17 +27,17 @@
         </activity>
 
         <activity
-                android:name=".ScanActivity">
+                android:name=".Activity.ScanActivity">
 
         </activity>
 
         <activity
-                android:name=".ListActivity">
+                android:name=".Activity.ListActivity">
 
         </activity>
 
         <activity
-                android:name=".SettingsActivity">
+                android:name=".Activity.SettingsActivity">
 
         </activity>
     </application>

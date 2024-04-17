@@ -1,30 +1,36 @@
 package com.example.code_binder;
 
 import android.content.Context;
-import android.widget.Toast;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
+import android.content.SharedPreferences;
 
 import java.io.*;
-import java.lang.reflect.Type;
 import java.net.Socket;
-import java.util.List;
+
+import static android.content.Context.MODE_PRIVATE;
 
 public class DataSender {
     private Context context;
 
-    private final int port = 11000;
-    private final String hostIp = "10.162.0.133";
+    private final int hostPort;
+    private final String hostIP;
+    private Socket socket;
 
-    public DataSender(Context context) {
-        this.context = context;
+    public DataSender(int hostPort, String hostIP) {
+        this.hostPort = hostPort;
+        this.hostIP = hostIP;
+    }
+
+    public void connect() {
+        try {
+            socket = new Socket(hostIP, hostPort);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public String sendData(String data) {
         // Отправка данных на сервер
         try {
-            Socket socket = new Socket(hostIp, port);
-
             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
             bufferedWriter.write(data);
@@ -38,18 +44,13 @@ public class DataSender {
     }
 
     public String getData() {
-        Gson gson = new Gson();
+        String receivedString = "";
 
         try {
-            Socket socket = new Socket(hostIp, port);
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             // Читаем строку, полученную от сервера
-            String receivedString = reader.readLine();
-            Toast.makeText(context, receivedString, Toast.LENGTH_SHORT).show();
-
-            Type listType = new TypeToken<List<Application>>(){}.getType();
-            List<Application> requirements = gson.fromJson(receivedString, listType);
+            receivedString = reader.readLine();
 
             // Закрываем соединение
             reader.close();
@@ -58,6 +59,6 @@ public class DataSender {
             e.printStackTrace();
         }
 
-        return "success";
+        return receivedString;
     }
 }

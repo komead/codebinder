@@ -1,32 +1,32 @@
 package com.example.code_binder;
 
+import java.util.List;
+
 public class Application {
-    private String title;
-    private int count;
+    private String id;
+    private List<Product> products;
 
-    private int alreadyScanned;
-
-    public String getTitle() {
-        return title;
+    public Application() {
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public Application(String id, List<Product> products) {
+        this.id = id;
+        this.products = products;
     }
 
-    public int getCount() {
-        return count;
+    public String getId() {
+        return id;
     }
 
-    public void setCount(int count) {
-        this.count = count;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public int getAlreadyScanned() {
-        return alreadyScanned;
+    public List<Product> getProducts() {
+        return products;
     }
 
-    public void setAlreadyScanned(int alreadyScanned) {
-        this.alreadyScanned = alreadyScanned;
+    public void setProducts(List<Product> products) {
+        this.products = products;
     }
 }
