@@ -29,4 +29,11 @@ public class Application {
     public void setProducts(List<Product> products) {
         this.products = products;
     }
+
+    public boolean gtinIsExist(String gtin) {
+        for (Product product : products)
+            if (product.getGtin().equals(gtin))
+                return true;
+        return false;
+    }
 }

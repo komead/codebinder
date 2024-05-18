@@ -1,13 +1,18 @@
-package com.example.code_binder;
+package com.example.code_binder.Activity;
 
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
 import androidx.appcompat.app.AppCompatActivity;
+import com.example.code_binder.Application;
+import com.example.code_binder.adapters.ListViewAdapter;
+import com.example.code_binder.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.gson.Gson;
 
-import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ListActivity extends AppCompatActivity {
     private ListView codeData_lv;
@@ -15,7 +20,9 @@ public class ListActivity extends AppCompatActivity {
     private FloatingActionButton back_btn;
     private ListViewAdapter adapter;
 
-    private ArrayList<String> scannedCodes;
+    private Application application;
+    private Set<String> codesForAdd;
+    private Set<String> codesForDelete;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -29,17 +36,18 @@ public class ListActivity extends AppCompatActivity {
         codeData_lv = findViewById(R.id.codeData_lv);
         codeData_lv.setAdapter(adapter);
 
-        CodeDataSource codeDataSource = new CodeDataSource(ListActivity.this);
-        codeDataSource.open();
-        scannedCodes = codeDataSource.getAllData();
-        codeDataSource.close();
+        Gson gson = new Gson();
+        application = gson.fromJson(getIntent().getStringExtra("Message"), Application.class);
 
-        if (scannedCodes != null)
-            for (String str : scannedCodes) {
-                adapter.addCode(str);
-                adapter.notifyDataSetChanged();
-            }
+        codesForAdd = new HashSet<>(getIntent().getStringArrayListExtra("codesForAdd"));
+        codesForDelete = new HashSet<>(getIntent().getStringArrayListExtra("codesForDelete"));
+        adapter.addAllProducts(application.getProducts());
+        adapter.notifyDataSetChanged();
 
+        setListeners();
+    }
+
+    private void setListeners() {
         back_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -53,8 +61,7 @@ public class ListActivity extends AppCompatActivity {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        DataSender dataSender = new DataSender(ListActivity.this);
-                        dataSender.sendData("xe-xe-xe");
+
                     }
                 }).start();
             }
