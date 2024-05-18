@@ -1,12 +1,11 @@
 package com.example.code_binder;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 
 import java.io.*;
 import java.net.Socket;
-
-import static android.content.Context.MODE_PRIVATE;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class DataSender {
     private Context context;
@@ -28,14 +27,40 @@ public class DataSender {
         }
     }
 
-    public String sendData(String data) {
+    public void disconnect() {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String sendData(int messageCode, String body) {
         // Отправка данных на сервер
         try {
-            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-            bufferedWriter.write(data);
-            bufferedWriter.flush();
-            socket.close();
+            OutputStream output = socket.getOutputStream();
+            ByteBuffer byteBuffer = ByteBuffer.allocate(2);
+            byteBuffer.putShort((short)(1 + body.length()));
+
+            byte[] arr = byteBuffer.array();
+            byte a = arr[0];
+            arr[0] = arr[1];
+            arr[1] = a;
+
+//            for (byte b : arr)
+//            Log.d("buffer", Byte.toString(b));
+
+            byteArrayOutputStream.write(arr);
+            byteArrayOutputStream.write(messageCode);
+            byteArrayOutputStream.write(body.getBytes(StandardCharsets.UTF_8));
+
+            byte[] array = byteArrayOutputStream.toByteArray();
+            output.write(array);
+
+            output.flush();
+            output.close();
         } catch (IOException e) {
             System.err.println("ошибка: " + e);
         }
@@ -47,14 +72,15 @@ public class DataSender {
         String receivedString = "";
 
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            InputStream input = socket.getInputStream();
 
-            // Читаем строку, полученную от сервера
-            receivedString = reader.readLine();
-
-            // Закрываем соединение
-            reader.close();
-            socket.close();
+            // Читаем полученную строку
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = input.read(buffer)) != -1) {
+                System.out.write(buffer, 0, bytesRead); // Выводим принятые байты на консоль
+            }
+            input.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

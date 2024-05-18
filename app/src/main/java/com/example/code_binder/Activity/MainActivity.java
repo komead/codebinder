@@ -2,7 +2,6 @@ package com.example.code_binder.Activity;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
@@ -13,12 +12,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.example.code_binder.*;
+import com.example.code_binder.enums.MessageCode;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private Button start_btn;
@@ -29,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayList<String> savedCodes;
     private Application task;
-
+    private DataSender dataSender;
     private Gson gson;
     private Preferences preferences;
     private String message;
@@ -52,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         taskId_tv = findViewById(R.id.tv_id);
 
         //start_btn.setVisibility(View.INVISIBLE);
-        start_btn.setEnabled(false);
+        //start_btn.setEnabled(false);
 
         if (!(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
@@ -88,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         start_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                dataSender.disconnect();
                 Intent intent = new Intent(MainActivity.this, ScanActivity.class);
                 intent.putExtra("Message", message);
                 startActivity(intent);
@@ -101,22 +100,23 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         gson = new Gson();
-                        DataSender dataSender = new DataSender(Integer.parseInt(preferences.get("hostPort")), preferences.get("hostIP"));
+                        dataSender = new DataSender(Integer.parseInt(preferences.get("hostPort")), preferences.get("hostIP"));
                         dataSender.connect();
-                        message = dataSender.getData();
+                        dataSender.sendData(MessageCode.START_AUTH.getCode(), "login=test_login=password=test_pass");
+                        //message = dataSender.getData();
 
                         task = gson.fromJson(message, Application.class);
 
-                        StringBuilder stringBuilder = new StringBuilder();
+                        if (task != null) {
+                            StringBuilder stringBuilder = new StringBuilder();
 
-                        for (Product product : task.getProducts()) {
-                            stringBuilder.append(product.getTitle());
-                            stringBuilder.append(" - ");
-                            stringBuilder.append(product.getCount());
-                            stringBuilder.append(" шт.\n");
-                        }
+                            for (Product product : task.getProducts()) {
+                                stringBuilder.append(product.getTitle());
+                                stringBuilder.append(" - ");
+                                stringBuilder.append(product.getCount());
+                                stringBuilder.append(" шт.\n");
+                            }
 
-                        if (task != null)
                             runOnUiThread(() -> {
                                 taskId_tv.setText("Для выполнения доступна заявка №" + task.getId());
                                 task_tv.setText(stringBuilder);
@@ -125,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
                                 //start_btn.setVisibility(View.VISIBLE);
                                 start_btn.setEnabled(true);
                             });
+                        }
                     }
                 }).start();
             }
