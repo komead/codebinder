@@ -56,10 +56,10 @@
             android:layout_marginBottom="24dp"/>
 
     <TextView
+            android:id="@+id/tv_text"
             android:text="TextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/counter"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             android:layout_marginTop="24dp"
@@ -70,5 +70,15 @@
             android:background="#401C42D1"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="24dp"/>
+
+    <Switch
+            android:id="@+id/switch1"
+            android:text="Delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:layout_constraintBottom_toTopOf="@+id/btn_torch"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

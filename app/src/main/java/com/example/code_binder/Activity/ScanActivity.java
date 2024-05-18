@@ -1,17 +1,22 @@
-package com.example.code_binder;
+package com.example.code_binder.Activity;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.media.Image;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.*;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
+import com.example.code_binder.Application;
+import com.example.code_binder.R;
+import com.example.code_binder.adapters.ScannedCodesStorage;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -20,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
+import com.google.gson.Gson;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
@@ -30,14 +36,17 @@ public class ScanActivity extends AppCompatActivity {
     private FloatingActionButton back_btn;
     private FloatingActionButton list_btn;
     private FloatingActionButton torch_btn;
-    private TextView codeCounter_tv;
+    private TextView text_tv;
+    private Switch delete_s;
 
-    private HashSet<String> scannedCodes;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
-    private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Camera camera;
+    private ScannedCodesStorage codesStorage;
+    private Application application;
 
     private boolean torchState;
+    private String message;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,12 +57,17 @@ public class ScanActivity extends AppCompatActivity {
         back_btn = findViewById(R.id.btn_back);
         list_btn = findViewById(R.id.btn_list);
         torch_btn = findViewById(R.id.btn_torch);
-        codeCounter_tv = findViewById(R.id.counter);
+        text_tv = findViewById(R.id.tv_text);
+        delete_s = findViewById(R.id.switch1);
 
-        scannedCodes = new HashSet<>();
+        message = getIntent().getStringExtra("Message");
+        Gson gson = new Gson();
+        application = gson.fromJson(message, Application.class);
+
+        codesStorage = new ScannedCodesStorage();
         torchState = false;
 
-        codeCounter_tv.setText("Отсканировано " + scannedCodes.size());
+        text_tv.setText("Ничего не сканировалось");
 
         setListeners();
         startCamera();
@@ -104,15 +118,31 @@ public class ScanActivity extends AppCompatActivity {
                 // Процесс распознавания
                 scanner.process(inputImage)
                         .addOnSuccessListener(barcodes -> {
+                            boolean scannings = false;
+
                             for (Barcode barcode : barcodes) {
                                 String rawValue = barcode.getRawValue();
-                                if (rawValue != null) {
-                                    scannedCodes.add(rawValue);
-                                    runOnUiThread(() -> {
-                                        codeCounter_tv.setText("Отсканировано: " + scannedCodes.size());
-                                    });
+
+                                if (rawValue != null && !codesStorage.isScanned(rawValue)) {
+                                    if (!delete_s.isChecked()) {
+                                        scannings = true;
+
+                                        codesStorage.addCode(rawValue);
+                                    } else {
+                                        scannings = true;
+
+                                        codesStorage.deleteCode(rawValue);
+                                    }
                                 }
                             }
+
+                            boolean finalScannings = scannings;
+                            runOnUiThread(() -> {
+                                //text_tv.setText("Сканирований: " + codesStorage.quantity());
+
+                                if (finalScannings)
+                                    Toast.makeText(this, "Отсканировано", Toast.LENGTH_SHORT).show();
+                            });
                         })
                         .addOnCompleteListener(task -> imageProxy.close());
             }
@@ -125,16 +155,10 @@ public class ScanActivity extends AppCompatActivity {
         list_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CodeDataSource codeDataSource = new CodeDataSource(ScanActivity.this);
-                codeDataSource.open();
-                codeDataSource.clear();
-
-                for (String code : scannedCodes)
-                    codeDataSource.addData(code);
-
-                codeDataSource.close();
-
                 Intent intent = new Intent(ScanActivity.this, ListActivity.class);
+                intent.putExtra("Message", message);
+                intent.putStringArrayListExtra("codesForAdd", new ArrayList<>(codesStorage.getCodesForAdd()));
+                intent.putStringArrayListExtra("codesForDelete", new ArrayList<>(codesStorage.getCodesForDelete()));
                 startActivity(intent);
                 //finish();
             }
@@ -151,7 +175,7 @@ public class ScanActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (torchState) {
-                    torch_btn.setImageResource(R.drawable.icon_flash_off);
+                    torch_btn.setImageResource(com.example.code_binder.R.drawable.icon_flash_off);
                     camera.getCameraControl().enableTorch(false);
                     torchState = false;
                 }
