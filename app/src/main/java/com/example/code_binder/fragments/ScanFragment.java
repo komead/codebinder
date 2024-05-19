@@ -1,37 +1,43 @@
-package com.example.code_binder.Activity;
+package com.example.code_binder.fragments;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.media.Image;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.*;
+import androidx.annotation.Nullable;
+import androidx.camera.core.Camera;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
 import com.example.code_binder.Application;
 import com.example.code_binder.R;
 import com.example.code_binder.adapters.ScannedCodesStorage;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.util.concurrent.ListenableFuture;
-
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ExecutorService;
-
 import com.google.gson.Gson;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 
-public class ScanActivity extends AppCompatActivity {
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class ScanFragment extends Fragment {
     private PreviewView camera_pv;
     private FloatingActionButton back_btn;
     private FloatingActionButton list_btn;
@@ -40,6 +46,7 @@ public class ScanActivity extends AppCompatActivity {
     private Switch delete_s;
 
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+    private ProcessCameraProvider cameraProvider;
     private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Camera camera;
     private ScannedCodesStorage codesStorage;
@@ -49,18 +56,22 @@ public class ScanActivity extends AppCompatActivity {
     private String message;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_scan);
+    }
 
-        camera_pv = findViewById(R.id.viewFinder);
-        back_btn = findViewById(R.id.btn_back);
-        list_btn = findViewById(R.id.btn_list);
-        torch_btn = findViewById(R.id.btn_torch);
-        text_tv = findViewById(R.id.tv_text);
-        delete_s = findViewById(R.id.switch1);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_scan, container, false);
 
-        message = getIntent().getStringExtra("Message");
+        back_btn = view.findViewById(R.id.btn_back);
+        list_btn = view.findViewById(R.id.btn_list);
+        torch_btn = view.findViewById(R.id.btn_torch);
+        text_tv = view.findViewById(R.id.tv_text);
+        delete_s = view.findViewById(R.id.switch1);
+
+        //message = getIntent().getStringExtra("Message");
         Gson gson = new Gson();
         application = gson.fromJson(message, Application.class);
 
@@ -70,26 +81,37 @@ public class ScanActivity extends AppCompatActivity {
         text_tv.setText("Ничего не сканировалось");
 
         setListeners();
+
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        camera_pv = view.findViewById(R.id.viewFinder);
         startCamera();
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Закрыть пул потоков когда Activity уничтожается
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (cameraProvider != null) {
+            cameraProvider.unbindAll();
+        }
         executor.shutdown();
     }
 
     private void startCamera() {
-        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext());
         cameraProviderFuture.addListener(() -> {
             try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                cameraProvider = cameraProviderFuture.get();
                 bindPreview(cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        }, ContextCompat.getMainExecutor(this));
+        }, ContextCompat.getMainExecutor(requireContext()));
     }
 
     private void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
@@ -136,13 +158,13 @@ public class ScanActivity extends AppCompatActivity {
                                 }
                             }
 
-                            boolean finalScannings = scannings;
-                            runOnUiThread(() -> {
+                            //boolean finalScannings = scannings;
+                            //requireActivity().runOnUiThread(() -> {
                                 //text_tv.setText("Сканирований: " + codesStorage.quantity());
 
-                                if (finalScannings)
-                                    Toast.makeText(this, "Отсканировано", Toast.LENGTH_SHORT).show();
-                            });
+                                if (scannings)
+                                    Toast.makeText(requireContext(), "Отсканировано", Toast.LENGTH_SHORT).show();
+                            //});
                         })
                         .addOnCompleteListener(task -> imageProxy.close());
             }
@@ -155,19 +177,25 @@ public class ScanActivity extends AppCompatActivity {
         list_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(ScanActivity.this, ListActivity.class);
-                intent.putExtra("Message", message);
-                intent.putStringArrayListExtra("codesForAdd", new ArrayList<>(codesStorage.getCodesForAdd()));
-                intent.putStringArrayListExtra("codesForDelete", new ArrayList<>(codesStorage.getCodesForDelete()));
-                startActivity(intent);
+//                Intent intent = new Intent(ScanActivity.this, ListActivity.class);
+//                intent.putExtra("Message", message);
+//                intent.putStringArrayListExtra("codesForAdd", new ArrayList<>(codesStorage.getCodesForAdd()));
+//                intent.putStringArrayListExtra("codesForDelete", new ArrayList<>(codesStorage.getCodesForDelete()));
+//                startActivity(intent);
                 //finish();
+                Fragment listFragment = new ListFragment();
+                requireActivity().getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_container, listFragment)
+                        .addToBackStack(null)
+                        .commit();
             }
         });
 
         back_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
+                FragmentManager fragmentManager = getParentFragmentManager();
+                fragmentManager.popBackStack();
             }
         });
 
@@ -187,5 +215,4 @@ public class ScanActivity extends AppCompatActivity {
             }
         });
     }
-
 }

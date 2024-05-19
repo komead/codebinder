@@ -1,10 +1,16 @@
-package com.example.code_binder.Activity;
+package com.example.code_binder.fragments;
 
 import android.os.Bundle;
+
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.code_binder.Preferences;
 import com.example.code_binder.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -12,7 +18,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SettingsActivity extends AppCompatActivity {
+public class SettingsFragment extends Fragment {
     private FloatingActionButton back_btn;
     private Button save_btn;
     private EditText ip_et;
@@ -22,20 +28,27 @@ public class SettingsActivity extends AppCompatActivity {
     private Map<String, String> settings;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
+    }
 
-        back_btn = findViewById(R.id.btn_back);
-        ip_et = findViewById(R.id.et_ip);
-        port_et = findViewById(R.id.et_port);
-        save_btn = findViewById(R.id.btn_save);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_settings, container, false);
 
-        preferences = new Preferences(this);
+        back_btn = view.findViewById(R.id.btn_back);
+        ip_et = view.findViewById(R.id.et_ip);
+        port_et = view.findViewById(R.id.et_port);
+        save_btn = view.findViewById(R.id.btn_save);
+
+        preferences = new Preferences(requireContext());
         settings = new HashMap<>();
 
         setListeners();
         getSettings();
+
+        return view;
     }
 
     private void getSettings() {
@@ -49,7 +62,8 @@ public class SettingsActivity extends AppCompatActivity {
         back_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish();
+                FragmentManager fragmentManager = getParentFragmentManager();
+                fragmentManager.popBackStack();
             }
         });
 
