@@ -44,4 +44,8 @@ public class Preferences {
         editor.putString(key, value);
         editor.apply();
     }
+
+    public boolean isEmpty() {
+        return preferences.getAll() == null;
+    }
 }

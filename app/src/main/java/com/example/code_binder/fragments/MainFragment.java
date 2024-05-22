@@ -3,7 +3,9 @@ package com.example.code_binder.fragments;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,27 +21,31 @@ import com.example.code_binder.enums.MessageCode;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
+import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainFragment extends Fragment {
     private Button start_btn;
     private Button load_btn;
-    private FloatingActionButton settings_btn;
     private TextView task_tv;
     private TextView taskId_tv;
+    private FloatingActionButton settings_btn;
 
     private Application task;
-    private DataSender dataSender;
-    private Gson gson;
-    private String message;
 
     private Preferences preferences;
+    private DataSender dataSender;
+
+    private ExecutorService executorService = Executors.newCachedThreadPool();
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         preferences = new Preferences(requireContext());
-        preferences.save("hostPort", "11000");
-        preferences.save("hostIP", "192.168.100.4");
+        dataSender = new ViewModelProvider(requireActivity()).get(DataSender.class);
     }
 
     @Override
@@ -55,12 +61,62 @@ public class MainFragment extends Fragment {
 
         setListeners();
 
-        //start_btn.setVisibility(View.INVISIBLE);
-        //start_btn.setEnabled(false);
+        start_btn.setVisibility(View.INVISIBLE);
+        start_btn.setEnabled(false);
 
+        //connect();
+
+//        dataSender.getIsConnected().observe(getViewLifecycleOwner(), new Observer<Boolean>() {
+//            @Override
+//            public void onChanged(Boolean isConnected) {
+//                if (!isConnected) {
+//                    taskId_tv.setText("Нет соединения с сервером");
+//                    task_tv.setText("Проверьте настройки подключения и повторите попытку");
+//                    load_btn.setText("Подключиться");
+//                    dataSender.setAuthorized(false);
+//                } else {
+//                    taskId_tv.setText("Не получена заявка");
+//                    task_tv.setText("Нажмите \"Загрузить\" для получения заявки");
+//                    load_btn.setText("Загрузить");
+//                }
+//            }
+//        });
 
 
         return view;
+    }
+
+    private void connect() {
+        if (!dataSender.isConnected()) {
+            String responce = dataSender.connect(Integer.parseInt(preferences.get("hostPort")), preferences.get("hostIP"));
+
+            if (responce.equals("success")) {
+                requireActivity().runOnUiThread(() -> {
+                    taskId_tv.setText("Не получена заявка");
+                    task_tv.setText("Нажмите \"Загрузить\" для получения заявки");
+                    load_btn.setText("Загрузить");
+                });
+
+                dataSender.sendData(MessageCode.START_AUTH.getCode(), "login=test_login=password=test_pass");
+                //!!!!!!!!!!!нужно обработать полученные данные на случай ошибки
+                HashMap<String, String> message = dataSender.getData();
+                //!!!!!!!!!!!нужно обработать полученные данные на случай ошибки
+                Log.d("message", message.get("code"));
+                Log.d("message", message.get("body"));
+
+                dataSender.setAuthorized(true);
+            } else {
+                requireActivity().runOnUiThread(() -> {
+                    taskId_tv.setText("Нет соединения с сервером");
+                    task_tv.setText("Проверьте настройки подключения и повторите попытку");
+                    load_btn.setText("Подключиться");
+                });
+            }
+        }
+    }
+
+    private void getMassage(int requiredCode) {
+
     }
 
     private void setListeners() {
@@ -78,9 +134,9 @@ public class MainFragment extends Fragment {
         start_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Fragment secondFragment = new ScanFragment();
+                Fragment scanFragment = new ScanFragment();
                 requireActivity().getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, secondFragment)
+                        .replace(R.id.fragment_container, scanFragment)
                         .addToBackStack(null)
                         .commit();
             }
@@ -89,16 +145,29 @@ public class MainFragment extends Fragment {
         load_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        gson = new Gson();
-                        dataSender = new DataSender(Integer.parseInt(preferences.get("hostPort")), preferences.get("hostIP"));
-                        dataSender.connect();
-                        dataSender.sendData(MessageCode.START_AUTH.getCode(), "login=test_login=password=test_pass");
-                        //message = dataSender.getData();
+                executorService.execute(() -> {
 
-                        task = gson.fromJson(message, Application.class);
+                    if (!dataSender.isConnected()) {
+                        connect();
+                    } else if (!dataSender.isAuthorized()) {
+                        dataSender.sendData(MessageCode.START_AUTH.getCode(), "login=test_login=password=test_pass");
+                        //!!!!!!!!!!!нужно обработать полученные данные на случай ошибки
+                        HashMap<String, String> message = dataSender.getData();
+                        //!!!!!!!!!!!нужно обработать полученные данные на случай ошибки
+                        Log.d("message", message.get("code"));
+                        Log.d("message", message.get("body"));
+
+                        dataSender.setAuthorized(true);
+                    } else {
+                        Log.d("message", "Авторизованы");
+
+                        HashMap<String, String> message = dataSender.getData();
+                        //!!!!!!!!!!!нужно обработать полученные данные на случай ошибки
+                        Log.d("message", message.get("code"));
+                        Log.d("message", message.get("body"));
+
+                        Gson gson = new Gson();
+                        task = gson.fromJson(message.get("body"), Application.class);
 
                         if (task != null) {
                             StringBuilder stringBuilder = new StringBuilder();
@@ -115,12 +184,12 @@ public class MainFragment extends Fragment {
                                 task_tv.setText(stringBuilder);
 
                                 //load_btn.setVisibility(View.INVISIBLE);
-                                //start_btn.setVisibility(View.VISIBLE);
+                                start_btn.setVisibility(View.VISIBLE);
                                 start_btn.setEnabled(true);
                             });
                         }
                     }
-                }).start();
+                });
             }
         });
     }
