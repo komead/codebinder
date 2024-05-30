@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Map;
 
 public class DataSender extends AndroidViewModel {
     private Socket socket;
@@ -19,7 +20,7 @@ public class DataSender extends AndroidViewModel {
     private OutputStream output;
     private InputStream input;
 
-    private MutableLiveData<Boolean> isConnected = new MutableLiveData<>(false);
+    private MutableLiveData<Map<String, String>> lastMessage = new MutableLiveData<>(new HashMap<>());
     private boolean isAuthorized = false;
 
     public DataSender(@NonNull Application application) {
@@ -37,11 +38,8 @@ public class DataSender extends AndroidViewModel {
             socket = new Socket(hostIP, hostPort);
             output = socket.getOutputStream();
             input = socket.getInputStream();
-//            isConnected.postValue(true);
             return "success";
         } catch (IOException e) {
-            e.printStackTrace();
-//            isConnected.postValue(false);
             return e.getMessage();
         }
     }
@@ -62,14 +60,12 @@ public class DataSender extends AndroidViewModel {
             socket = null;
             output = null;
             input = null;
-//            isConnected.postValue(false);
         }
     }
 
     public boolean isConnected() {
         if (socket == null || socket.isClosed() || !socket.isConnected()) {
             isAuthorized = false;
-//            isConnected.postValue(false);
             return false;
         }
         return true;
@@ -83,8 +79,12 @@ public class DataSender extends AndroidViewModel {
         isAuthorized = authorized;
     }
 
-    public LiveData<Boolean> getIsConnected() {
-        return isConnected;
+    public LiveData<Map<String, String>> getLastMessage() {
+        return lastMessage;
+    }
+
+    public void setLastMessage(Map<String, String> map) {
+        lastMessage.postValue(map);
     }
 
     public boolean testConnection() {
@@ -122,7 +122,6 @@ public class DataSender extends AndroidViewModel {
                 return "ошибка: Соединение отсутствует";
             }
         } catch (IOException e) {
-//            isConnected.postValue(false);
             return "ошибка: " + e;
         }
     }
@@ -156,7 +155,6 @@ public class DataSender extends AndroidViewModel {
             }
         } catch (IOException e) {
             e.printStackTrace();
-//            isConnected.postValue(false);
             map.put("code", null);
             map.put("body", e.getMessage());
             return map;
