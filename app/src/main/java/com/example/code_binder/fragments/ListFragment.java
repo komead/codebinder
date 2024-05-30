@@ -4,31 +4,34 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.code_binder.Application;
+import com.example.code_binder.CompletedTask;
+import com.example.code_binder.DataSender;
+import com.example.code_binder.HttpRequests;
 import com.example.code_binder.R;
 import com.example.code_binder.adapters.ListViewAdapter;
+import com.example.code_binder.enums.MessageCode;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class ListFragment extends Fragment {
     private ListView codeData_lv;
     private Button send_btn;
     private FloatingActionButton back_btn;
+    private TextView task_tv;
     private ListViewAdapter adapter;
 
     private Application application;
-    private Set<String> codesForAdd;
-    private Set<String> codesForDelete;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -44,15 +47,15 @@ public class ListFragment extends Fragment {
 
         send_btn = view.findViewById(R.id.send_btn);
         back_btn = view.findViewById(R.id.btn_back);
+        task_tv = view.findViewById(R.id.task_tv);
         codeData_lv = view.findViewById(R.id.codeData_lv);
         codeData_lv.setAdapter(adapter);
 
         Gson gson = new Gson();
-        //application = gson.fromJson(getIntent().getStringExtra("Message"), Application.class);
+        application = gson.fromJson(getArguments().getString("task"), Application.class);
+        task_tv.setText(application.toString());
 
-        //codesForAdd = new HashSet<>(getIntent().getStringArrayListExtra("codesForAdd"));
-        //codesForDelete = new HashSet<>(getIntent().getStringArrayListExtra("codesForDelete"));
-        //adapter.addAllProducts(application.getProducts());
+        //adapter.addAllProducts(getArguments().getStringArrayList("scannedcodes"));
         //adapter.notifyDataSetChanged();
 
         setListeners();
@@ -74,7 +77,19 @@ public class ListFragment extends Fragment {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
+                        HttpRequests httpRequests = new HttpRequests();
 
+                        Gson gson = new Gson();
+                        CompletedTask completedTask = new CompletedTask(application.getId(), getArguments().getStringArrayList("scannedCodes"));
+                        requireActivity().runOnUiThread(() -> {
+                            task_tv.setText(gson.toJson(completedTask));
+                        });
+
+
+                        //httpRequests.Post("http://10.162.0.68:9090/application/json", null);
+
+                        DataSender dataSender = new ViewModelProvider(requireActivity()).get(DataSender.class);
+                        dataSender.sendData(MessageCode.JOB_DONE.getCode(), "");
                     }
                 }).start();
             }

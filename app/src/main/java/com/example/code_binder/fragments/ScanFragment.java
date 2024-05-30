@@ -3,6 +3,7 @@ package com.example.code_binder.fragments;
 import android.annotation.SuppressLint;
 import android.media.Image;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,16 +24,22 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.code_binder.Application;
+import com.example.code_binder.HttpRequests;
+import com.example.code_binder.Product;
 import com.example.code_binder.R;
-import com.example.code_binder.adapters.ScannedCodesStorage;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
 import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,15 +56,21 @@ public class ScanFragment extends Fragment {
     private ProcessCameraProvider cameraProvider;
     private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Camera camera;
-    private ScannedCodesStorage codesStorage;
+    private ArrayList<String> scannedCodes;
     private Application application;
+    private ArrayList<String> gtins;
+    private ArrayList<String> boxGtin;
+    private HttpRequests httpRequests;
+    private Gson gson;
 
     private boolean torchState;
-    private String message;
+    private String task;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        httpRequests = new HttpRequests();
     }
 
     @Override
@@ -71,11 +84,18 @@ public class ScanFragment extends Fragment {
         text_tv = view.findViewById(R.id.tv_text);
         delete_s = view.findViewById(R.id.switch1);
 
-        //message = getIntent().getStringExtra("Message");
-        Gson gson = new Gson();
-        application = gson.fromJson(message, Application.class);
+        task = getArguments().getString("task");
+        gson = new Gson();
+        application = gson.fromJson(task, Application.class);
+        gtins = new ArrayList<>();
 
-        codesStorage = new ScannedCodesStorage();
+        for (Product product : application.getProducts())
+            gtins.add(product.getGtin());
+
+        if (scannedCodes == null) {
+            scannedCodes = new ArrayList<>();
+            boxGtin = new ArrayList<>();
+        }
         torchState = false;
 
         text_tv.setText("Ничего не сканировалось");
@@ -140,31 +160,58 @@ public class ScanFragment extends Fragment {
                 // Процесс распознавания
                 scanner.process(inputImage)
                         .addOnSuccessListener(barcodes -> {
-                            boolean scannings = false;
-
                             for (Barcode barcode : barcodes) {
-                                String rawValue = barcode.getRawValue();
+                                String dataFromBarcode = barcode.getRawValue();
 
-                                if (rawValue != null && !codesStorage.isScanned(rawValue)) {
+                                /////не забыть удалить!!!!!!!!!!!!!!!
+//                                if (dataFromBarcode != null)
+//                                    requireActivity().runOnUiThread(() -> {
+//                                        Log.d("scanned", dataFromBarcode + "  длина:  " + dataFromBarcode.length());
+//                                        Log.d("scanned", dataFromBarcode.substring(4, 14));
+//                                    });
+
+                                if (dataFromBarcode != null && gtins.contains(dataFromBarcode.substring(4, 14))) {
                                     if (!delete_s.isChecked()) {
-                                        scannings = true;
+                                        if (dataFromBarcode.length() <= 40) {
+                                            if (!scannedCodes.contains(dataFromBarcode)) {
+                                                scannedCodes.add(dataFromBarcode);
+                                                setMessage("added");
+                                            }
+                                        } else if (!boxGtin.contains(dataFromBarcode)) {
+                                            boxGtin.add(dataFromBarcode);
+                                            new Thread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    String json = httpRequests.Get("http://192.168.100.4:9090/box/" + dataFromBarcode);
+                                                    requireActivity().runOnUiThread(() -> {
+                                                        Log.d("scanned", json);
+                                                    });
+                                                    JsonObject jsonObject = gson.fromJson(json, JsonObject.class);
+                                                    Type listType = new TypeToken<List<String>>() {
+                                                    }.getType();
+                                                    List<String> list = gson.fromJson(jsonObject.get("items"), listType);
 
-                                        codesStorage.addCode(rawValue);
+                                                    for (String string : list)
+                                                        requireActivity().runOnUiThread(() -> {
+                                                            Log.d("scanned", string);
+                                                        });
+
+                                                    for (String string : list) {
+                                                        if (!scannedCodes.contains(string)) {
+                                                            scannedCodes.add(dataFromBarcode);
+                                                        }
+                                                    }
+                                                }
+                                            }).start();
+                                        }
                                     } else {
-                                        scannings = true;
-
-                                        codesStorage.deleteCode(rawValue);
+                                        if (dataFromBarcode.length() <= 40 && scannedCodes.contains(dataFromBarcode)) {
+                                            scannedCodes.remove(dataFromBarcode);
+                                            setMessage("deleted");
+                                        }
                                     }
                                 }
                             }
-
-                            //boolean finalScannings = scannings;
-                            //requireActivity().runOnUiThread(() -> {
-                                //text_tv.setText("Сканирований: " + codesStorage.quantity());
-
-                                if (scannings)
-                                    Toast.makeText(requireContext(), "Отсканировано", Toast.LENGTH_SHORT).show();
-                            //});
                         })
                         .addOnCompleteListener(task -> imageProxy.close());
             }
@@ -173,17 +220,23 @@ public class ScanFragment extends Fragment {
         camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
     }
 
+    private void setMessage(String message) {
+        requireActivity().runOnUiThread(() -> {
+            text_tv.setText(message);
+        });
+    }
+
     private void setListeners() {
         list_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                Intent intent = new Intent(ScanActivity.this, ListActivity.class);
-//                intent.putExtra("Message", message);
-//                intent.putStringArrayListExtra("codesForAdd", new ArrayList<>(codesStorage.getCodesForAdd()));
-//                intent.putStringArrayListExtra("codesForDelete", new ArrayList<>(codesStorage.getCodesForDelete()));
-//                startActivity(intent);
-                //finish();
+                Bundle bundle = new Bundle();
+                bundle.putString("task", task);
+                bundle.putStringArrayList("scannedCodes", scannedCodes);
+
                 Fragment listFragment = new ListFragment();
+                listFragment.setArguments(bundle);
+
                 requireActivity().getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, listFragment)
                         .addToBackStack(null)

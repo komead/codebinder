@@ -32,13 +32,13 @@ public class MainFragment extends Fragment {
     private TextView taskId_tv;
     private FloatingActionButton settings_btn;
 
-    private Application task;
-
+    private Application application;
     private Preferences preferences;
     private DataSender dataSender;
 
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
+    private String task;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,8 +61,8 @@ public class MainFragment extends Fragment {
 
         setListeners();
 
-        start_btn.setVisibility(View.INVISIBLE);
-        start_btn.setEnabled(false);
+        //start_btn.setVisibility(View.INVISIBLE);
+        //start_btn.setEnabled(false);
 
         //connect();
 
@@ -134,7 +134,12 @@ public class MainFragment extends Fragment {
         start_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Bundle bundle = new Bundle();
+                bundle.putString("task", "{\"id\":\"8\",\"products\":[{\"title\":\"Молоко\",\"gtin\":\"4810268061\",\"count\":1}]}");
+
                 Fragment scanFragment = new ScanFragment();
+                scanFragment.setArguments(bundle);
+
                 requireActivity().getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, scanFragment)
                         .addToBackStack(null)
@@ -167,12 +172,15 @@ public class MainFragment extends Fragment {
                         Log.d("message", message.get("body"));
 
                         Gson gson = new Gson();
-                        task = gson.fromJson(message.get("body"), Application.class);
+                        task = message.get("body");
+                        application = gson.fromJson(task, Application.class);
 
-                        if (task != null) {
+                        dataSender.sendData(MessageCode.PROPOSAL_ACCEPTED.getCode(), "");
+
+                        if (application != null) {
                             StringBuilder stringBuilder = new StringBuilder();
 
-                            for (Product product : task.getProducts()) {
+                            for (Product product : application.getProducts()) {
                                 stringBuilder.append(product.getTitle());
                                 stringBuilder.append(" - ");
                                 stringBuilder.append(product.getCount());
@@ -180,10 +188,11 @@ public class MainFragment extends Fragment {
                             }
 
                             requireActivity().runOnUiThread(() -> {
-                                taskId_tv.setText("Для выполнения доступна заявка №" + task.getId());
+                                taskId_tv.setText("Для выполнения доступна заявка №" + application.getId());
                                 task_tv.setText(stringBuilder);
 
-                                //load_btn.setVisibility(View.INVISIBLE);
+                                load_btn.setVisibility(View.INVISIBLE);
+                                load_btn.setEnabled(false);
                                 start_btn.setVisibility(View.VISIBLE);
                                 start_btn.setEnabled(true);
                             });

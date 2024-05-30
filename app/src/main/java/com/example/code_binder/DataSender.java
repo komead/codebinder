@@ -96,7 +96,7 @@ public class DataSender extends AndroidViewModel {
         }
     }
 
-    public String sendData(int messageCode, String body) {
+    public String sendData(int messageCode, @NonNull String body) {
         try {
             if (isConnected()) {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(2);
