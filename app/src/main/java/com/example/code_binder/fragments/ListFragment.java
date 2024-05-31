@@ -5,14 +5,14 @@ import android.os.Bundle;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.code_binder.Application;
 import com.example.code_binder.CompletedTask;
@@ -25,7 +25,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.Gson;
 
 public class ListFragment extends Fragment {
-    private ListView codeData_lv;
+    private RecyclerView codeData_rv;
     private Button send_btn;
     private FloatingActionButton back_btn;
     private TextView task_tv;
@@ -43,20 +43,20 @@ public class ListFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
 
-        adapter = new ListViewAdapter(requireContext());
+
+        Gson gson = new Gson();
+        application = gson.fromJson(getArguments().getString("task"), Application.class);
 
         send_btn = view.findViewById(R.id.send_btn);
         back_btn = view.findViewById(R.id.btn_back);
         task_tv = view.findViewById(R.id.task_tv);
-        codeData_lv = view.findViewById(R.id.codeData_lv);
-        codeData_lv.setAdapter(adapter);
+        codeData_rv = view.findViewById(R.id.codeData_rv);
+        codeData_rv.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        Gson gson = new Gson();
-        application = gson.fromJson(getArguments().getString("task"), Application.class);
+        adapter = new ListViewAdapter(application.getProducts(), getArguments().getStringArrayList("scannedCodes"));
+        codeData_rv.setAdapter(adapter);
+
         task_tv.setText(application.toString());
-
-        //adapter.addAllProducts(getArguments().getStringArrayList("scannedcodes"));
-        //adapter.notifyDataSetChanged();
 
         setListeners();
 

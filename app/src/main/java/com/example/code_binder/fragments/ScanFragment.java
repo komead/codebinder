@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.camera.core.Camera;
@@ -25,7 +24,7 @@ import android.view.ViewGroup;
 
 import com.example.code_binder.Application;
 import com.example.code_binder.HttpRequests;
-import com.example.code_binder.Product;
+import com.example.code_binder.Preferences;
 import com.example.code_binder.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.common.reflect.TypeToken;
@@ -39,7 +38,9 @@ import com.google.mlkit.vision.common.InputImage;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,11 +58,12 @@ public class ScanFragment extends Fragment {
     private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private Camera camera;
     private ArrayList<String> scannedCodes;
+    private Map<String, Integer> quantityOfScannedCodes;
     private Application application;
-    private ArrayList<String> gtins;
     private ArrayList<String> boxGtin;
     private HttpRequests httpRequests;
     private Gson gson;
+    private Preferences preferences;
 
     private boolean torchState;
     private String task;
@@ -70,6 +72,7 @@ public class ScanFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        preferences = new Preferences(requireContext());
         httpRequests = new HttpRequests();
     }
 
@@ -87,14 +90,12 @@ public class ScanFragment extends Fragment {
         task = getArguments().getString("task");
         gson = new Gson();
         application = gson.fromJson(task, Application.class);
-        gtins = new ArrayList<>();
-
-        for (Product product : application.getProducts())
-            gtins.add(product.getGtin());
+        application.fillAllGtins();
 
         if (scannedCodes == null) {
             scannedCodes = new ArrayList<>();
             boxGtin = new ArrayList<>();
+            quantityOfScannedCodes = new HashMap<>();
         }
         torchState = false;
 
@@ -163,52 +164,11 @@ public class ScanFragment extends Fragment {
                             for (Barcode barcode : barcodes) {
                                 String dataFromBarcode = barcode.getRawValue();
 
-                                /////не забыть удалить!!!!!!!!!!!!!!!
-//                                if (dataFromBarcode != null)
-//                                    requireActivity().runOnUiThread(() -> {
-//                                        Log.d("scanned", dataFromBarcode + "  длина:  " + dataFromBarcode.length());
-//                                        Log.d("scanned", dataFromBarcode.substring(4, 14));
-//                                    });
-
-                                if (dataFromBarcode != null && gtins.contains(dataFromBarcode.substring(4, 14))) {
+                                if (dataFromBarcode != null && application.gtinIsExist(dataFromBarcode.substring(4, 14))) {
                                     if (!delete_s.isChecked()) {
-                                        if (dataFromBarcode.length() <= 40) {
-                                            if (!scannedCodes.contains(dataFromBarcode)) {
-                                                scannedCodes.add(dataFromBarcode);
-                                                setMessage("added");
-                                            }
-                                        } else if (!boxGtin.contains(dataFromBarcode)) {
-                                            boxGtin.add(dataFromBarcode);
-                                            new Thread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    String json = httpRequests.Get("http://192.168.100.4:9090/box/" + dataFromBarcode);
-                                                    requireActivity().runOnUiThread(() -> {
-                                                        Log.d("scanned", json);
-                                                    });
-                                                    JsonObject jsonObject = gson.fromJson(json, JsonObject.class);
-                                                    Type listType = new TypeToken<List<String>>() {
-                                                    }.getType();
-                                                    List<String> list = gson.fromJson(jsonObject.get("items"), listType);
-
-                                                    for (String string : list)
-                                                        requireActivity().runOnUiThread(() -> {
-                                                            Log.d("scanned", string);
-                                                        });
-
-                                                    for (String string : list) {
-                                                        if (!scannedCodes.contains(string)) {
-                                                            scannedCodes.add(dataFromBarcode);
-                                                        }
-                                                    }
-                                                }
-                                            }).start();
-                                        }
+                                        addBarcode(dataFromBarcode);
                                     } else {
-                                        if (dataFromBarcode.length() <= 40 && scannedCodes.contains(dataFromBarcode)) {
-                                            scannedCodes.remove(dataFromBarcode);
-                                            setMessage("deleted");
-                                        }
+                                        deleteBarcode(dataFromBarcode);
                                     }
                                 }
                             }
@@ -218,6 +178,73 @@ public class ScanFragment extends Fragment {
         });
 
         camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis);
+    }
+
+    private void addBarcode(String dataFromBarcode) {
+        if (dataFromBarcode.length() <= 40) {
+            if (!scannedCodes.contains(dataFromBarcode)) {
+                scannedCodes.add(dataFromBarcode);
+                setMessage("added");
+//                quantityOfScannedCodes.put(dataFromBarcode.substring(4, 14), quantityOfScannedCodes.getOrDefault(dataFromBarcode.substring(4, 14), 0) + 1);
+            }
+        } else if (!boxGtin.contains(dataFromBarcode)) {
+            boxGtin.add(dataFromBarcode);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    String json = httpRequests.Get("http://"
+                            + preferences.get("serverIP") + ":"
+                            + preferences.get("serverPort") + "/box/"
+                            + dataFromBarcode);
+                    requireActivity().runOnUiThread(() -> {
+                        Log.d("scanned", json);
+                    });
+                    JsonObject jsonObject = gson.fromJson(json, JsonObject.class);
+                    Type listType = new TypeToken<List<String>>() {
+                    }.getType();
+                    List<String> list = gson.fromJson(jsonObject.get("items"), listType);
+
+                    for (String string : list) {
+                        if (!scannedCodes.contains(string)) {
+                            scannedCodes.add(dataFromBarcode);
+                        }
+                    }
+                }
+            }).start();
+        }
+    }
+
+    private void deleteBarcode(String dataFromBarcode) {
+        if (dataFromBarcode.length() <= 40) {
+            if (scannedCodes.contains(dataFromBarcode)) {
+                scannedCodes.remove(dataFromBarcode);
+                setMessage("deleted");
+            }
+        } else if (!boxGtin.contains(dataFromBarcode)) {
+            boxGtin.add(dataFromBarcode);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    String json = httpRequests.Get("http://"
+                            + preferences.get("serverIP") + ":"
+                            + preferences.get("serverPort") + "/box/"
+                            + dataFromBarcode);
+                    requireActivity().runOnUiThread(() -> {
+                        Log.d("scanned", json);
+                    });
+                    JsonObject jsonObject = gson.fromJson(json, JsonObject.class);
+                    Type listType = new TypeToken<List<String>>() {
+                    }.getType();
+                    List<String> list = gson.fromJson(jsonObject.get("items"), listType);
+
+                    for (String string : list) {
+                        if (scannedCodes.contains(string)) {
+                            scannedCodes.remove(dataFromBarcode);
+                        }
+                    }
+                }
+            }).start();
+        }
     }
 
     private void setMessage(String message) {

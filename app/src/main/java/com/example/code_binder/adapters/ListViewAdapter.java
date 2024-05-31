@@ -1,62 +1,64 @@
 package com.example.code_binder.adapters;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.code_binder.Product;
 import com.example.code_binder.R;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class ListViewAdapter extends ArrayAdapter<String> {
+public class ListViewAdapter extends RecyclerView.Adapter<ListViewAdapter.ViewHolder> {
+    private List<Product> productList;
+    private List<String> scannedCodes;
 
-    private Context context;
-    private TextView info_tv;
-    private TextView gtin_tv;
-    private List<Product> products;
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        public TextView info_tv;
+        public TextView counter_tv;
 
-    public ListViewAdapter(Context context) {
-        super(context, R.layout.list_item);
-        this.context = context;
-        this.products = new ArrayList<>();
+        public ViewHolder(View view) {
+            super(view);
+            info_tv = view.findViewById(R.id.tv_info);
+            counter_tv = view.findViewById(R.id.tv_counter);
+        }
+    }
+
+    public ListViewAdapter(List<Product> productList, List<String> scannedCodes) {
+        this.productList = productList;
+        this.scannedCodes = scannedCodes;
     }
 
     @Override
-    public int getCount() {
-        return products.size();
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View itemView = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.list_item, parent, false);
+        return new ViewHolder(itemView);
     }
 
     @Override
-    public String getItem(int position) {
-        //return products.get(position);
-        return null;
+    public void onBindViewHolder(ViewHolder holder, int position) {
+        Product item = productList.get(position);
+        holder.info_tv.setText(item.getTitle());
+
+        int alreadyScanned = getAlreadyScanned(item.getGtin());
+        holder.counter_tv.setText(alreadyScanned + "/" + item.getCount());
     }
 
     @Override
-    public long getItemId(int position) {
-        return position;
+    public int getItemCount() {
+        return productList.size();
     }
 
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View rowView = inflater.inflate(R.layout.list_item, parent, false);
-
-        info_tv = rowView.findViewById(R.id.tv_info);
-        gtin_tv = rowView.findViewById(R.id.tv_gtin);
-
-        info_tv.setText(products.get(position).getTitle());
-        gtin_tv.setText(products.get(position).getGtin());
-
-        return rowView;
-    }
-
-    public void addAllProducts(List<Product> list) {
-        if (!list.isEmpty())
-            products.addAll(list);
+    private int getAlreadyScanned(String gtin) {
+        int i = 0;
+        for (String string : scannedCodes) {
+            if (string.contains(gtin))
+                i++;
+        }
+        return i;
     }
 }

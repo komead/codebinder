@@ -7,28 +7,24 @@
         android:layout_height="match_parent">
 
     <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/linearLayout">
-        <TextView
-                android:id="@+id/tv_info"
-                style="@style/listitem_fields"
-                android:text="Text"
-        />
-        <TextView
-                android:id="@+id/tv_gtin"
-                style="@style/listitem_fields"
-                android:text="Text"
-        />
-    </LinearLayout>
+        android:id="@+id/linearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
 
-    <TextView
+        <TextView
+            android:id="@+id/tv_info"
+            style="@style/listitem_fields"
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:text="Text" />
+
+        <TextView
             android:id="@+id/tv_counter"
             style="@style/listitem_fields"
-            android:text="0/0"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/linearLayout"/>
+            android:layout_width="match_parent"
+            android:layout_weight="3"
+            android:text="0/0" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

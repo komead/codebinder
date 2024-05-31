@@ -13,10 +13,6 @@ public class Application {
     public Application(String id, List<Product> products) {
         this.id = id;
         this.products = products;
-        this.allGtins = new ArrayList<>();
-
-        for (Product product : products)
-            allGtins.add(product.getGtin());
     }
 
     public String getId() {
@@ -33,6 +29,13 @@ public class Application {
 
     public void setProducts(List<Product> products) {
         this.products = products;
+    }
+
+    public void fillAllGtins() {
+        allGtins = new ArrayList<>();
+
+        for (Product product : products)
+            allGtins.add(product.getGtin());
     }
 
     @NonNull
