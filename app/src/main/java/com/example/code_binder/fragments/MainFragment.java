@@ -178,7 +178,7 @@ public class MainFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 Bundle bundle = new Bundle();
-                bundle.putString("task", "{\"id\":\"8\",\"products\":[{\"title\":\"Молоко\",\"gtin\":\"4810268061\",\"count\":1}]}");
+                bundle.putString("task", task);
 
                 Fragment scanFragment = new ScanFragment();
                 scanFragment.setArguments(bundle);

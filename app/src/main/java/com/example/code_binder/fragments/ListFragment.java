@@ -18,6 +18,7 @@ import com.example.code_binder.Application;
 import com.example.code_binder.CompletedTask;
 import com.example.code_binder.DataSender;
 import com.example.code_binder.HttpRequests;
+import com.example.code_binder.Preferences;
 import com.example.code_binder.R;
 import com.example.code_binder.adapters.ListViewAdapter;
 import com.example.code_binder.enums.MessageCode;
@@ -32,10 +33,12 @@ public class ListFragment extends Fragment {
     private ListViewAdapter adapter;
 
     private Application application;
+    private Preferences preferences;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        preferences = new Preferences(requireContext());
     }
 
     @Override
@@ -86,7 +89,10 @@ public class ListFragment extends Fragment {
                         });
 
 
-                        //httpRequests.Post("http://10.162.0.68:9090/application/json", null);
+                        httpRequests.Post("http://"
+                                + preferences.get("serverIP") + ":"
+                                + preferences.get("serverPort")
+                                + "/application/json", gson.toJson(completedTask));
 
                         DataSender dataSender = new ViewModelProvider(requireActivity()).get(DataSender.class);
                         dataSender.sendData(MessageCode.JOB_DONE.getCode(), "");
