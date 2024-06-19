@@ -185,7 +185,7 @@ public class MainFragment extends Fragment {
 
                 requireActivity().getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_container, scanFragment)
-                        .addToBackStack(null)
+                        .addToBackStack("scan")
                         .commit();
             }
         });

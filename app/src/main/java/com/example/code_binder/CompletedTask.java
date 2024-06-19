@@ -1,32 +1,36 @@
 package com.example.code_binder;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CompletedTask {
-    private String proposal_id;
-    private ArrayList<String> gtins;
+    private String number;
+    private List<Info> gtins;
 
-    public CompletedTask(String proposal_id, ArrayList<String> gtins) {
-        this.proposal_id = proposal_id;
+    public CompletedTask(String number, List<Product> products) {
+        this.number = number;
         this.gtins = new ArrayList<>();
 
-        for (String string : gtins)
-            this.gtins.add(string.substring(4, 17));
+        for (Product product : products)
+            for (String string : product.getScannedPackages())
+                gtins.add(new Info(product.getGtin(), string));
     }
 
-    public void setProposal_id(String proposal_id) {
-        this.proposal_id = proposal_id;
+    private static class Info {
+        private String gtin;
+        private String package_number;
+
+        public Info(String gtin, String package_number) {
+            this.gtin = gtin;
+            this.package_number = package_number;
+        }
     }
 
-    public void setGtins(ArrayList<String> gtins) {
-        this.gtins = gtins;
+    public void setNumber(String number) {
+        this.number = number;
     }
 
-    public String getProposal_id() {
-        return proposal_id;
-    }
-
-    public ArrayList<String> getGtins() {
-        return gtins;
+    public String getNumber() {
+        return number;
     }
 }

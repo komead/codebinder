@@ -19,10 +19,6 @@ public class Preferences {
     }
 
     public Map<String, String> getAll() {
-//        Map<String, String> loadedSettings = new HashMap<>();
-//        loadedSettings.put("hostIP", preferences.getString("hostIP", "192.168.89.108"));
-//        loadedSettings.put("hostPort", preferences.getString("hostPort", "11000"));
-
         return (Map<String, String>) preferences.getAll();
     }
 

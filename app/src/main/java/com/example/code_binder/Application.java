@@ -2,13 +2,15 @@ package com.example.code_binder;
 
 import androidx.annotation.NonNull;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-public class Application {
+public class Application implements Serializable {
     private String id;
     private List<Product> products;
-    private ArrayList<String> allGtins;
+    private HashMap<String, Integer> allGtins;
 
     public Application(String id, List<Product> products) {
         this.id = id;
@@ -32,10 +34,10 @@ public class Application {
     }
 
     public void fillAllGtins() {
-        allGtins = new ArrayList<>();
+        allGtins = new HashMap<>();
 
         for (Product product : products)
-            allGtins.add(product.getGtin());
+            allGtins.put(product.getGtin(), product.getCount());
     }
 
     @NonNull
@@ -52,6 +54,17 @@ public class Application {
     }
 
     public boolean gtinIsExist(String gtin) {
-        return allGtins.contains(gtin);
+        return allGtins.containsKey(gtin);
+    }
+
+    public int getCountByGtin(String gtin) {
+        return allGtins.get(gtin);
+    }
+
+    public Product getProductByGtin(String gtin) {
+        for (Product product : products)
+            if (product.getGtin().equals(gtin))
+                return product;
+        return null;
     }
 }

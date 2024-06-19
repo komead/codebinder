@@ -1,9 +1,14 @@
 package com.example.code_binder;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class Product {
     private String title;
     private String gtin;
     private int count;
+    private int alreadyScanned;
+    private Set<String> scannedPackages = new HashSet<>();
 
     public Product() {
     }
@@ -36,5 +41,29 @@ public class Product {
 
     public void setCount(int count) {
         this.count = count;
+    }
+
+    public int getAlreadyScanned() {
+        return alreadyScanned;
+    }
+
+    public void setAlreadyScanned(int alreadyScanned) {
+        this.alreadyScanned = alreadyScanned;
+    }
+
+    public Set<String> getScannedPackages() {
+        return scannedPackages;
+    }
+
+    public void addPackage(String string) {
+        scannedPackages.add(string);
+    }
+
+    public void deletePackage(String string) {
+        scannedPackages.remove(string);
+    }
+
+    public boolean isScanned(String string) {
+        return scannedPackages.contains(string);
     }
 }

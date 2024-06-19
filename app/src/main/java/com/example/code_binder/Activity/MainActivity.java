@@ -13,11 +13,9 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.code_binder.*;
 import com.example.code_binder.fragments.MainFragment;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
-    private ArrayList<String> savedCodes;
     private DataSender dataSender;
     private Preferences preferences;
 
@@ -57,10 +55,6 @@ public class MainActivity extends AppCompatActivity {
                         if (dataSender.isConnected()) {
                             HashMap<String, String> receivedData = dataSender.getData();
                             if (receivedData != null) {
-//                                runOnUiThread(() -> {
-//                                    Log.d("message", receivedData.get("code"));
-//                                    Log.d("message", receivedData.get("body"));
-//                                });
                                 dataSender.setLastMessage(receivedData);
                             }
                         }
@@ -71,21 +65,5 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }).start();
-
-
-        /*loadDB();
-
-        if (!savedCodes.isEmpty()) {
-            Toast.makeText(this, "Есть незавершённый сеанс", Toast.LENGTH_SHORT).show();
-        }*/
-    }
-
-    private void loadDB () {
-        CodeDataSource codeDataSource = new CodeDataSource(MainActivity.this);
-        codeDataSource.open();
-
-        savedCodes = codeDataSource.getAllData();
-
-        codeDataSource.close();
     }
 }

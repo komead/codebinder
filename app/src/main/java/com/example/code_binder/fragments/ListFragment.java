@@ -47,8 +47,7 @@ public class ListFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
 
 
-        Gson gson = new Gson();
-        application = gson.fromJson(getArguments().getString("task"), Application.class);
+        application = (Application) getArguments().getSerializable("application");
 
         send_btn = view.findViewById(R.id.send_btn);
         back_btn = view.findViewById(R.id.btn_back);
@@ -56,7 +55,7 @@ public class ListFragment extends Fragment {
         codeData_rv = view.findViewById(R.id.codeData_rv);
         codeData_rv.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        adapter = new ListViewAdapter(application.getProducts(), getArguments().getStringArrayList("scannedCodes"));
+        adapter = new ListViewAdapter(application.getProducts());
         codeData_rv.setAdapter(adapter);
 
         task_tv.setText(application.toString());
@@ -83,19 +82,18 @@ public class ListFragment extends Fragment {
                         HttpRequests httpRequests = new HttpRequests();
 
                         Gson gson = new Gson();
-                        CompletedTask completedTask = new CompletedTask(application.getId(), getArguments().getStringArrayList("scannedCodes"));
-                        requireActivity().runOnUiThread(() -> {
-                            task_tv.setText(gson.toJson(completedTask));
-                        });
-
+                        CompletedTask completedTask = new CompletedTask(application.getId(), application.getProducts());
 
                         httpRequests.Post("http://"
                                 + preferences.get("serverIP") + ":"
                                 + preferences.get("serverPort")
-                                + "/application/json", gson.toJson(completedTask));
+                                + "/application/complete", gson.toJson(completedTask));
 
                         DataSender dataSender = new ViewModelProvider(requireActivity()).get(DataSender.class);
                         dataSender.sendData(MessageCode.JOB_DONE.getCode(), "");
+
+                        FragmentManager fragmentManager = getParentFragmentManager();
+                        fragmentManager.popBackStack("scan", FragmentManager.POP_BACK_STACK_INCLUSIVE);
                     }
                 }).start();
             }

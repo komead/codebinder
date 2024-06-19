@@ -44,17 +44,17 @@
             app:backgroundTint="@color/white"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-            style="@style/camera_buttons"
-            android:src="@android:drawable/ic_menu_sort_by_size"
-            android:id="@+id/btn_list"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:backgroundTint="#000000"
-            app:elevation="0dp"
-            app:pressedTranslationZ="0dp"
-            app:borderWidth="2dp"
-            android:layout_marginRight="32dp"
-            android:layout_marginBottom="24dp"/>
+        android:id="@+id/btn_list"
+        style="@style/camera_buttons"
+        android:layout_marginRight="32dp"
+        android:layout_marginBottom="24dp"
+        android:src="@android:drawable/ic_menu_sort_by_size"
+        app:backgroundTint="#FFFFFF"
+        app:borderWidth="2dp"
+        app:elevation="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:pressedTranslationZ="0dp" />
 
     <TextView
         android:id="@+id/tv_text"

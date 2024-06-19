@@ -8,16 +8,16 @@
     tools:context=".fragments.MainFragment">
 
     <Button
-        android:text="Начать"
+        android:id="@+id/btn_start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/btn_start"
         android:layout_gravity="center_horizontal"
-        android:backgroundTint="#023CAF"
+        android:layout_marginBottom="60dp"
+        android:backgroundTint="#8FB3FA"
+        android:text="Начать"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="60dp"/>
+        app:layout_constraintStart_toStartOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         style="@style/setting_buttons"

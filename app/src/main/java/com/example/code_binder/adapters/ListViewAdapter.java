@@ -14,7 +14,6 @@ import java.util.List;
 
 public class ListViewAdapter extends RecyclerView.Adapter<ListViewAdapter.ViewHolder> {
     private List<Product> productList;
-    private List<String> scannedCodes;
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView info_tv;
@@ -27,9 +26,8 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewAdapter.ViewHo
         }
     }
 
-    public ListViewAdapter(List<Product> productList, List<String> scannedCodes) {
+    public ListViewAdapter(List<Product> productList) {
         this.productList = productList;
-        this.scannedCodes = scannedCodes;
     }
 
     @Override
@@ -44,21 +42,12 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewAdapter.ViewHo
         Product item = productList.get(position);
         holder.info_tv.setText(item.getTitle());
 
-        int alreadyScanned = getAlreadyScanned(item.getGtin());
+        int alreadyScanned = item.getAlreadyScanned();
         holder.counter_tv.setText(alreadyScanned + "/" + item.getCount());
     }
 
     @Override
     public int getItemCount() {
         return productList.size();
-    }
-
-    private int getAlreadyScanned(String gtin) {
-        int i = 0;
-        for (String string : scannedCodes) {
-            if (string.contains(gtin))
-                i++;
-        }
-        return i;
     }
 }
